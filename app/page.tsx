@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import OrbitalPanel from './components/OrbitalPanel'; 
 import AccessModal from './components/AccessModal';
-import { useMotorOrbital } from '@/hooks/useMotorOrbital';
-import { SKILLS_CATALOGO } from '@/lib/skillsEngine';
+import { useMotorOrbital } from '../hooks/useMotorOrbital';
+import { SKILLS_CATALOGO } from '../lib/skillsEngine';
 import ResultsModal from './components/ResultsModal';
 
 // ==========================================
