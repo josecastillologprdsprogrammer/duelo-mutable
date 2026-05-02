@@ -1,11 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Extraemos las credenciales del archivo .env.local que configuramos
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Fallback preventivo: si no existen, usamos strings vacíos para que el build no explote
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
 
-/**
- * Este es el cliente centralizado. 
- * Lo exportamos para usarlo en page.tsx y cualquier otro componente.
- */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
