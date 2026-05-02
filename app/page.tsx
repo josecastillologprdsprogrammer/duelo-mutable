@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import OrbitalPanel from './components/OrbitalPanel'; 
 import AccessModal from './components/AccessModal';
@@ -6,9 +7,10 @@ import { useMotorOrbital } from '../hooks/useMotorOrbital';
 import { SKILLS_CATALOGO } from '../lib/skillsEngine';
 import ResultsModal from './components/ResultsModal';
 
-// ==========================================
-// COMPONENTE: SLOT DE HABILIDAD
-// ==========================================
+/**
+ * COMPONENTE: SLOT DE HABILIDAD
+ * Representa una unidad de acción táctica en el HUD.
+ */
 function SkillSlot({ skill, desbloqueada, activa, esNueva, energia, onActivar }: any) {
   const puedePagar = energia >= skill.costo;
   const clickeable = desbloqueada && puedePagar && !activa;
@@ -17,12 +19,13 @@ function SkillSlot({ skill, desbloqueada, activa, esNueva, energia, onActivar }:
     <div 
       onClick={() => clickeable && onActivar(skill.id)}
       className={`
-      relative flex flex-col items-center justify-center w-14 h-14 border-2 transition-all duration-500 rounded-sm
-      ${desbloqueada ? 'opacity-100 scale-100' : 'opacity-10 scale-90 grayscale'}
-      ${esNueva ? 'animate-bounce border-white shadow-[0_0_20px_white] z-10' : 'border-zinc-800'}
-      ${activa ? 'bg-white text-black shadow-[0_0_15px_white]' : 'bg-transparent'}
-      ${clickeable ? 'cursor-pointer hover:border-cyan-500' : 'cursor-default'}
-    `}>
+        relative flex flex-col items-center justify-center w-14 h-14 border-2 transition-all duration-500 rounded-sm
+        ${desbloqueada ? 'opacity-100 scale-100' : 'opacity-10 scale-90 grayscale'}
+        ${esNueva ? 'animate-bounce border-white shadow-[0_0_20px_white] z-10' : 'border-zinc-800'}
+        ${activa ? 'bg-white text-black shadow-[0_0_15px_white]' : 'bg-transparent'}
+        ${clickeable ? 'cursor-pointer hover:border-cyan-500' : 'cursor-default'}
+      `}
+    >
       <span className={`text-[9px] font-bold font-mono ${activa ? 'text-black' : 'text-zinc-400'}`}>
         {skill.tecla.replace('Digit', '').replace('Key', '')}
       </span>
@@ -41,13 +44,14 @@ function SkillSlot({ skill, desbloqueada, activa, esNueva, energia, onActivar }:
   );
 }
 
-// ==========================================
-// COMPONENTE PRINCIPAL: DASHBOARD A316
-// ==========================================
+/**
+ * DASHBOARD A316 - NÚCLEO DE OPERACIONES
+ */
 export default function Home() {
   const [userSession, setUserSession] = useState<{ id: string; username: string; slot: number; roomCode: string } | null>(null);
   const [mostrarInstrucciones, setMostrarInstrucciones] = useState(false); 
   
+  // Hook de lógica de juego (Motor de Resonancia)
   const motor = useMotorOrbital(userSession);
 
   const { 
@@ -56,9 +60,16 @@ export default function Home() {
     jugadores, countdown, telemetriaRivales, marcarListo, activarSkillManualmente
   } = motor;
 
+  // Persistencia de sesión local para reconexión rápida
   useEffect(() => {
     const saved = localStorage.getItem('A316_SESSION');
-    if (saved) setUserSession(JSON.parse(saved));
+    if (saved) {
+      try {
+        setUserSession(JSON.parse(saved));
+      } catch (e) {
+        console.error("Error recuperando sesión:", e);
+      }
+    }
   }, []);
 
   const abortarEnlace = () => {
@@ -73,7 +84,10 @@ export default function Home() {
     return `${m}:${s}`;
   };
 
-  if (!userSession) return <AccessModal onAccessGranted={(data) => setUserSession(data)} />;
+  // GATEKEEPER: Si no hay sesión, mostramos el modal de acceso (Público/Guest)
+  if (!userSession) {
+    return <AccessModal onAccessGranted={(data) => setUserSession(data)} />;
+  }
 
   const SLOTS_TOTALES = [1, 2, 3, 4];
   const slotsOponentes = SLOTS_TOTALES.filter(s => s !== userSession.slot);
@@ -111,36 +125,25 @@ export default function Home() {
             <div className="space-y-4 font-mono text-sm text-zinc-300">
               <div className="bg-zinc-900/30 p-3 border-l-2 border-cyan-500">
                 <p className="text-cyan-400 font-bold mb-1 text-xs">OBJETIVO PRIMARIO</p>
-                <p className="text-xs">Extraer <span className="text-white font-bold">Puntos de Resonancia</span> mediante la vinculación geométrica de mentes (nodos) antes de que el Sync_Clock llegue a cero.</p>
+                <p className="text-xs">Extraer <span className="text-white font-bold">Puntos de Resonancia</span> mediante vinculación geométrica antes de que el Sync_Clock llegue a cero.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-yellow-500 font-bold mb-1 text-xs">1. EXTRACCIÓN (CLIC)</p>
-                  <p className="text-[11px] text-zinc-400">Haz clic sobre los nodos en movimiento para congelarlos en tu matriz local. Requiere un mínimo de 3 nodos para operar.</p>
+                  <p className="text-[11px] text-zinc-400">Congela nodos en tu matriz. Mínimo 3 nodos para operar.</p>
                 </div>
                 <div>
-                  <p className="text-yellow-500 font-bold mb-1 text-xs">2. VALIDACIÓN ESPACIAL</p>
-                  <p className="text-[11px] text-zinc-400">La figura formada debe ser estrictamente un <span className="text-white">polígono convexo</span> y mantener una <span className="text-white">proporción estructural</span> equilibrada.</p>
+                  <p className="text-yellow-500 font-bold mb-1 text-xs">2. VALIDACIÓN</p>
+                  <p className="text-[11px] text-zinc-400">La figura debe ser un <span className="text-white">polígono convexo</span> equilibrado.</p>
                 </div>
                 <div>
                   <p className="text-yellow-500 font-bold mb-1 text-xs">3. COLAPSO (ESPACIO)</p>
-                  <p className="text-[11px] text-zinc-400">Presiona la barra <span className="text-white border border-zinc-700 px-1 rounded bg-zinc-900">ESPACIO</span> para validar la geometría. Si es correcta, ganarás puntos y Energía EMS.</p>
+                  <p className="text-[11px] text-zinc-400">Presiona <span className="text-white border border-zinc-700 px-1 rounded bg-zinc-900">ESPACIO</span> para validar.</p>
                 </div>
                 <div>
-                  <p className="text-yellow-500 font-bold mb-1 text-xs">4. GUERRA ELECTRÓNICA</p>
-                  <p className="text-[11px] text-zinc-400">Cada 30s recibirás nuevas Skills. Paga su costo de EMS usando el <span className="text-white">TECLADO</span> o haciendo <span className="text-white">CLIC</span> en los paneles laterales.</p>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-zinc-800 flex gap-8">
-                <div>
-                  <p className="text-[10px] text-green-400 mb-1">BUFFS (Teclas 1-5)</p>
-                  <p className="text-[10px] text-zinc-500">Alteran la física a tu favor.</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-red-400 mb-1">DEBUFFS (Teclas Q-T)</p>
-                  <p className="text-[10px] text-zinc-500">Sabotean la matriz de tu escuadra.</p>
+                  <p className="text-yellow-500 font-bold mb-1 text-xs">4. SKILLS</p>
+                  <p className="text-[11px] text-zinc-400">Usa el <span className="text-white">TECLADO (1-5, Q-T)</span> para activar ventajas o sabotajes.</p>
                 </div>
               </div>
             </div>
@@ -154,13 +157,11 @@ export default function Home() {
           <span className="font-mono text-[160px] font-bold text-white animate-pulse drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
             {countdown}
           </span>
-          <p className="font-mono text-cyan-500 tracking-[1.5em] uppercase text-sm mt-4">
-            Sincronizando Enlace Escuadra
-          </p>
+          <p className="font-mono text-cyan-500 tracking-[1.5em] uppercase text-sm mt-4">Sincronizando Enlace Escuadra</p>
         </div>
       )}
 
-      {/* ÁREA LOCAL */}
+      {/* ÁREA DE OPERACIONES LOCAL */}
       <div className="flex-[2.5] flex flex-col items-center justify-center border-r border-zinc-900 pr-8">
         
         <div className="mb-6 w-full max-w-[600px] flex justify-between items-end">
@@ -195,7 +196,7 @@ export default function Home() {
             </p>
           </div>
 
-          {/* TIMER Y BOTÓN DE INSTRUCCIONES */}
+          {/* TELEMETRÍA DE TIEMPO */}
           <div className="text-right flex flex-col items-end gap-2">
             <button 
               onClick={() => setMostrarInstrucciones(true)}
@@ -212,7 +213,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* HUD COMBATE */}
+        {/* HUD DE COMBATE Y PANEL ORBITAL */}
         <div className="flex gap-6 items-center">
           <div className="flex flex-col gap-2">
             <span className="text-[8px] font-mono text-zinc-600 uppercase text-center mb-1">Buffs</span>
@@ -221,7 +222,12 @@ export default function Home() {
             ))}
           </div>
 
-          <OrbitalPanel idJugador={userSession.username} esLocal={true} size={540} motor={{ ...motor, skillsActivas: { ...motor.skillsActivas, ...motor.debuffsEnemigos } }} />
+          <OrbitalPanel 
+            idJugador={userSession.username} 
+            esLocal={true} 
+            size={540} 
+            motor={{ ...motor, skillsActivas: { ...motor.skillsActivas, ...motor.debuffsEnemigos } }} 
+          />
 
           <div className="flex flex-col gap-2">
             <span className="text-[8px] font-mono text-zinc-600 uppercase text-center mb-1">Debuffs</span>
@@ -244,7 +250,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* TELEMETRÍA RIVAL */}
+      {/* TELEMETRÍA RIVAL (FEED REMOTO) */}
       <div className="flex-1 flex flex-col gap-6 justify-center">
         <div className="flex justify-between items-center border-b border-zinc-900 pb-2 px-1">
           <h2 className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Telemetría_Escuadra</h2>
@@ -256,13 +262,24 @@ export default function Home() {
           const infoJugador = jugadores.find(j => j.slot === slotId);
 
           return (
-            <OrbitalPanel key={slotId} idJugador={infoJugador?.username || `Slot_0${slotId}`} size={200} esLocal={false} motor={{ ...motor, score: datosRival?.score || 0, skillsActivas: datosRival?.skills || {}, seleccionadosRef: { current: motor.nodosRef.current.filter(n => datosRival?.nodos.includes(n.id)) } }} />
+            <OrbitalPanel 
+              key={slotId} 
+              idJugador={infoJugador?.username || `Slot_0${slotId}`} 
+              size={200} 
+              esLocal={false} 
+              motor={{ 
+                ...motor, 
+                score: datosRival?.score || 0, 
+                skillsActivas: datosRival?.skills || {}, 
+                seleccionadosRef: { current: motor.nodosRef.current.filter(n => datosRival?.nodos.includes(n.id)) } 
+              }} 
+            />
           );
         })}
 
         <div className="mt-2 p-3 bg-zinc-900/10 border border-zinc-900/50 rounded-sm">
            <p className="text-[8px] font-mono text-zinc-700 uppercase leading-tight">
-             Protocolo: Resonancia_A316<br/>
+             Protocol: Resonancia_A316<br/>
              Status: {estadoPartida === 'jugando' ? 'ENLACE_ACTIVO' : 'SINCRONIZANDO'}<br/>
              Net_Buffer: Optimizando_Broadcast
            </p>
