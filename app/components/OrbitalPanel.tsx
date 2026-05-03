@@ -50,7 +50,7 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
   const isRegen = efectosVisibles['b5'];
 
   // ============================================================================
-  // MOTOR DE RENDERIZADO CANVAS (FÍSICAS, LÍNEAS Y TRANSPARENCIA AVANZADA)
+  // MOTOR DE RENDERIZADO CANVAS (CON SOPORTE PARA FONDO TRANSPARENTE)
   // ============================================================================
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -62,22 +62,23 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
     const ratio = size / 600; 
 
     const renderFrame = () => {
-      // TÉCNICA DE MOTION BLUR TRANSPARENTE: 
-      // Borra el frame anterior progresivamente hacia la transparencia, no hacia el negro.
+      // TÉCNICA DE ESTELA TRANSPARENTE:
+      // En lugar de pintar negro, "borramos" gradualmente el contenido anterior
+      // Esto permite que la imagen bg.png sea visible a través del rastro.
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; // El alfa controla la longitud de la estela
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; 
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Restaurar el modo de dibujo normal para las líneas y nodos
+      // Volver a modo de dibujo estándar
       ctx.globalCompositeOperation = 'source-over';
       
       const centerX = size / 2;
       const centerY = size / 2;
 
+      // Dibujo de Aristas (Líneas)
       const seleccionados = seleccionadosRef.current || [];
       if (seleccionados.length > 1) {
         ctx.beginPath();
-        
         ctx.strokeStyle = 'rgba(0, 229, 255, 0.8)';
         ctx.lineWidth = (esLocal ? 2.5 : 1.5) * ratio;
         ctx.shadowBlur = 10 * ratio;
@@ -101,6 +102,7 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
         ctx.shadowBlur = 0;
       }
 
+      // Dibujo de Nodos
       const nodos = nodosRef.current || [];
       nodos.forEach((nodo: any) => {
         const x = centerX + Math.cos(nodo.angulo) * nodo.anillo * ratio;
@@ -110,7 +112,6 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
         ctx.arc(x, y, (esLocal ? 5 : 3.5) * ratio, 0, Math.PI * 2);
         
         ctx.globalAlpha = isBloqueado ? 0.15 : 1;
-        
         const colorNodo = nodo.color || '#6366f1';
         ctx.fillStyle = colorNodo;
         
@@ -134,7 +135,7 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
   }, [size, esLocal, isInvertido, isBloqueado]); 
 
   // ============================================================================
-  // ESTRUCTURA DOM Y OVERLAYS (CAPAS)
+  // ESTRUCTURA DE CAPAS (OVERLAYS)
   // ============================================================================
   return (
     <div className={`relative flex flex-col items-center transition-all duration-1000 
@@ -153,21 +154,22 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
         </span>
       </div>
 
-      {/* CONTENEDOR DEL RADAR Y FILTROS VISUALES */}
+      {/* CONTENEDOR DEL RADAR */}
       <div className={`relative p-2 border-2 transition-all duration-500 rounded-full bg-black overflow-hidden
         ${esLocal ? 'border-zinc-800 shadow-[0_0_40px_rgba(0,0,0,0.8)]' : 'border-zinc-900/50'}
         ${isDouble ? 'border-yellow-500/50 shadow-[0_0_50px_rgba(234,179,8,0.2)]' : ''}
         ${isRegen ? 'border-pink-500/30' : ''}
       `}>
         
-        {/* --- CAPA 0: FONDO DE ENTORNO (Radar/Grid/Espacio) --- */}
+        {/* --- CAPA 0: IMAGEN DE FONDO --- */}
         <img 
           src="/bg.png" 
-          alt="Entorno Orbital" 
-          className="absolute inset-0 w-full h-full object-cover z-0 opacity-40 pointer-events-none mix-blend-screen"
+          alt="Orbital Background" 
+          className="absolute inset-0 w-full h-full object-cover z-0 opacity-60 pointer-events-none mix-blend-screen"
+          onError={(e) => { e.currentTarget.style.display = 'none'; }}
         />
 
-        {/* --- CAPA 10: NÚCLEO FÍSICO (CANVAS TRANSPARENTE) --- */}
+        {/* --- CAPA 10: CANVAS (LÓGICA FÍSICA) --- */}
         <canvas
           ref={canvasRef}
           width={size}
@@ -179,9 +181,10 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
           }}
           className={`rounded-full transition-opacity z-10 relative 
             ${esLocal && !isBloqueado ? 'cursor-crosshair' : 'cursor-not-allowed'}`}
+          style={{ background: 'transparent' }}
         />
         
-        {/* --- CAPA 20+: DEBUFFS ENEMIGOS (Armamento de Sabotaje) --- */}
+        {/* --- CAPA 20+: DEBUFFS --- */}
         {isCegado && (
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none mix-blend-color-dodge opacity-80 transition-opacity">
             <img src="/skills/d1.png" alt="Ceguera" className="w-[80%] h-[80%] object-contain animate-pulse blur-sm" />
@@ -205,7 +208,7 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
           </div>
         )}
 
-        {/* --- CAPA 20+: BUFFS ACTIVOS (Sistemas de Apoyo) --- */}
+        {/* --- CAPA 20+: BUFFS --- */}
         {isChronos && (
           <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center opacity-10">
             <img src="/skills/b1.png" alt="Chronos" className="w-[80%] h-[80%] object-contain mix-blend-screen animate-[pulse_4s_ease-in-out_infinite]" />
@@ -235,14 +238,14 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
           </div>
         )}
 
-        {/* HUD BASE (Anillo exterior decorativo) */}
+        {/* HUD DECORATIVO */}
         <div className="absolute inset-0 border-[3px] border-white/5 rounded-full pointer-events-none scale-[1.02] z-30" />
       </div>
 
-      {/* BARRA DE PROGRESO DE EXTRACCIÓN (Rivales) */}
+      {/* PROGRESO RIVAL */}
       {!esLocal && (
         <div className="mt-3 w-full flex justify-center px-4">
-          <div className="h-1 w-full bg-zinc-900 overflow-hidden shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+          <div className="h-1 w-full bg-zinc-900 overflow-hidden">
             <div 
               className="h-full bg-cyan-800 transition-all duration-1000" 
               style={{ width: `${Math.min((score / 10000) * 100, 100)}%` }} 
