@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface AccessModalProps {
   onAccessGranted: (userData: { id: string; username: string; slot: number; roomCode: string }) => void;
 }
 
-// --- UTILIDAD: GENERACIÓN DE IDENTIFICADOR ÚNICO DE SESIÓN ---
 const generarUUID = () => {
   if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
     return window.crypto.randomUUID();
@@ -25,7 +24,6 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Verificación de sesión persistente para reconexión automática
   useEffect(() => {
     const sessionSaved = localStorage.getItem('A316_SESSION');
     if (sessionSaved) {
@@ -51,10 +49,8 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
     try {
       let finalCode = roomCode.trim().toUpperCase();
       const isCreating = !finalCode;
-
       if (isCreating) finalCode = generarCodigoSala();
 
-      // 1. Intentar localizar la sala en la red de Supabase
       const { data: sala, error: fetchError } = await supabase
         .from('salas')
         .select('*')
@@ -68,11 +64,8 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
       let updatedJugadores = [];
 
       if (!sala) {
-        // CASO A: CREAR NUEVA MATRIZ (SALA)
         mySlot = 1;
-        // CORRECCIÓN ARQUITECTÓNICA: Estado pasivo por defecto
         updatedJugadores = [{ id: myId, username: cleanUsername, slot: mySlot, listo: false }];
-        
         const { error: createError } = await supabase
           .from('salas')
           .insert([{ 
@@ -80,13 +73,9 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
             jugadores: updatedJugadores, 
             estado: 'espera' 
           }]);
-          
         if (createError) throw createError;
       } else {
-        // CASO B: UNIRSE A ENLACE EXISTENTE
         const jugadoresActuales = sala.jugadores || [];
-        
-        // Verificar si el piloto ya estaba en esta sala (reconexión)
         const pilotoExistente = jugadoresActuales.find(
           (p: any) => p.username.toUpperCase() === cleanUsername
         );
@@ -95,90 +84,84 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
           myId = pilotoExistente.id;
           mySlot = pilotoExistente.slot;
         } else {
-          // Validar capacidad de la escuadra
-          if (jugadoresActuales.length >= 4) {
-            throw new Error('SALA_LLENA');
-          }
-          
+          if (jugadoresActuales.length >= 4) throw new Error('SALA_LLENA');
           mySlot = jugadoresActuales.length + 1;
-          // CORRECCIÓN ARQUITECTÓNICA: Estado pasivo por defecto
           updatedJugadores = [...jugadoresActuales, { id: myId, username: cleanUsername, slot: mySlot, listo: false }];
-
           const { error: updateError } = await supabase
             .from('salas')
             .update({ jugadores: updatedJugadores })
             .eq('codigo_sala', finalCode);
-
           if (updateError) throw updateError;
         }
       }
 
-      // 2. Establecer sesión local y conceder acceso
       const sessionData = { id: myId, username: cleanUsername, slot: mySlot, roomCode: finalCode };
       localStorage.setItem('A316_SESSION', JSON.stringify(sessionData));
       onAccessGranted(sessionData);
 
     } catch (err: any) {
-      console.error("Fallo de enlace neural:", err);
-      if (err.message === 'SALA_LLENA') {
-        setError('SALA_AL_MÁXIMO_DE_CAPACIDAD');
-      } else {
-        setError('ERROR_DE_ENLACE_RSD_V4');
-      }
+      setError(err.message === 'SALA_LLENA' ? 'SALA_AL_MÁXIMO_DE_CAPACIDAD' : 'ERROR_DE_ENLACE_RSD_V4');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[#050505] text-white select-none">
+    <div className="fixed inset-0 z-[100] flex items-center justify-end pr-10 md:pr-[12%] overflow-hidden bg-black select-none">
       
-      {/* FONDO ESTRUCTURAL */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-black via-zinc-950 to-cyan-950/20" />
-      <div className="absolute inset-0 z-10 bg-black/40 backdrop-blur-[1px]" />
+      {/* CAPA DE FONDO: EXCLUSIVO LOBBY */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src="/bg.png" 
+          className="w-full h-full object-cover opacity-80" 
+          alt="Lobby Matrix" 
+        />
+        {/* Overlay para suavizar la transición hacia el panel de la derecha */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/60" />
+      </div>
 
-      {/* PANEL DE CONTROL */}
-      <div className="relative z-20 w-full max-w-sm border border-zinc-800 bg-black/60 backdrop-blur-md p-8 shadow-[0_0_50px_rgba(6,182,212,0.1)]">
+      {/* PANEL DE IDENTIFICACIÓN (A LA DERECHA) */}
+      <div className="relative z-20 w-full max-w-[380px] border border-cyan-500/30 bg-black/80 backdrop-blur-xl p-10 shadow-[0_0_80px_rgba(0,0,0,0.9)] rounded-sm">
         
-        <div className="mb-8 text-center border-b border-zinc-800 pb-6">
-          <h2 className="font-mono text-xl font-bold tracking-tighter text-cyan-500 drop-shadow-[0_0_10px_rgba(6,182,212,0.5)] uppercase">
+        <div className="mb-10 text-center border-b border-zinc-800 pb-8">
+          <h2 className="font-mono text-2xl font-bold tracking-tighter text-cyan-400 drop-shadow-[0_0_15px_rgba(6,182,212,0.4)] uppercase">
             Identificación de Piloto
           </h2>
-          <p className="font-mono text-[9px] text-zinc-400 mt-2 tracking-widest uppercase">
+          <p className="font-mono text-[10px] text-zinc-500 mt-2 tracking-[0.3em] uppercase">
             Sistema de Acceso Público A316
           </p>
         </div>
 
-        <form onSubmit={handleAccess} className="space-y-6">
+        <form onSubmit={handleAccess} className="space-y-8">
           <div className="space-y-2">
-            <label className="block font-mono text-[9px] text-zinc-500 uppercase tracking-widest">User_ID</label>
+            <label className="block font-mono text-[10px] text-zinc-600 uppercase tracking-widest">User_ID</label>
             <input
               required
               autoFocus
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-zinc-950/80 border border-zinc-800 p-3 font-mono text-sm text-cyan-400 focus:outline-none focus:border-cyan-500/50 transition-colors uppercase"
-              placeholder="Escribe tu alias..."
+              className="w-full bg-zinc-950/90 border border-zinc-800 p-4 font-mono text-sm text-cyan-400 focus:outline-none focus:border-cyan-500/50 transition-all uppercase placeholder:text-zinc-800"
+              placeholder="ESCRIBE TU ALIAS..."
               maxLength={12}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="block font-mono text-[9px] text-zinc-500 uppercase tracking-widest">Link_Code (Opcional)</label>
+            <label className="block font-mono text-[10px] text-zinc-600 uppercase tracking-widest">Link_Code (Opcional)</label>
             <input
               type="text"
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value)}
-              className="w-full bg-zinc-950/80 border border-zinc-800 p-3 font-mono text-sm text-white focus:outline-none focus:border-zinc-700 transition-colors uppercase"
-              placeholder="Código para unirse..."
+              className="w-full bg-zinc-950/90 border border-zinc-800 p-4 font-mono text-sm text-white focus:outline-none focus:border-zinc-700 transition-all uppercase placeholder:text-zinc-800"
+              placeholder="CÓDIGO PARA UNIRSE..."
               maxLength={6}
             />
           </div>
 
           {error && (
-            <div className="py-2 bg-red-900/10 border border-red-900/50">
-              <p className="font-mono text-[10px] text-red-500 text-center uppercase tracking-tighter animate-pulse"> 
+            <div className="py-3 bg-red-950/20 border border-red-900/50">
+              <p className="font-mono text-[11px] text-red-500 text-center uppercase tracking-tighter animate-pulse"> 
                 {">"} {error} 
               </p>
             </div>
@@ -186,16 +169,16 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
 
           <button
             disabled={loading || !username}
-            className="w-full py-4 bg-zinc-900/80 border border-zinc-700 text-cyan-500 font-mono text-xs font-bold uppercase hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-20 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(6,182,212,0.1)] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+            className="w-full py-5 bg-zinc-900/40 border border-zinc-700 text-cyan-500 font-mono text-xs font-bold uppercase hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-10 shadow-[0_0_20px_rgba(6,182,212,0.1)] hover:shadow-[0_0_40px_rgba(6,182,212,0.3)]"
           >
             {loading ? 'ESTABLECIENDO ENLACE...' : roomCode ? 'VINCULAR A ESCUADRA' : 'INICIAR NUEVA MATRIZ'}
           </button>
         </form>
 
-        <div className="mt-6 flex justify-center gap-4 opacity-30">
-          <div className="w-1 h-1 bg-cyan-500 rounded-full animate-ping" />
-          <div className="w-1 h-1 bg-cyan-500 rounded-full animate-ping [animation-delay:0.2s]" />
-          <div className="w-1 h-1 bg-cyan-500 rounded-full animate-ping [animation-delay:0.4s]" />
+        <div className="mt-10 flex justify-center gap-6 opacity-20">
+          <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-ping" />
+          <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-ping [animation-delay:0.3s]" />
+          <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-ping [animation-delay:0.6s]" />
         </div>
       </div>
     </div>
