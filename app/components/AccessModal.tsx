@@ -95,7 +95,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-end pr-10 md:pr-[10%] overflow-hidden bg-black select-none">
+    <div className="fixed inset-0 z-[100] flex items-center justify-end pr-10 md:pr-[10%] overflow-hidden bg-black select-none font-mono">
       
       {/* BACKGROUND LOBBY */}
       <div className="absolute inset-0 z-0">
@@ -103,26 +103,25 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/80" />
       </div>
 
-      {/* PANEL DE IDENTIFICACIÓN (MARCO TÉCNICO) */}
+      {/* PANEL DE IDENTIFICACIÓN */}
       <div className="relative z-20 w-full max-w-[450px] p-1 bg-cyan-900/10 backdrop-blur-xl border border-cyan-500/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
         
-        {/* Esquinas Decorativas con Brillo */}
+        {/* Esquinas Decorativas con Brillo Intenso */}
         <div className="absolute -top-1 -left-1 w-5 h-5 border-t-2 border-l-2 border-cyan-400 shadow-[0_0_15px_#22d3ee] z-30" />
         <div className="absolute -top-1 -right-1 w-5 h-5 border-t-2 border-r-2 border-cyan-400 shadow-[0_0_15px_#22d3ee] z-30" />
         <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-2 border-l-2 border-cyan-400 shadow-[0_0_15px_#22d3ee] z-30" />
         <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-2 border-r-2 border-cyan-400 shadow-[0_0_15px_#22d3ee] z-30" />
 
-        <div className="relative border border-cyan-500/30 p-10 bg-black/70">
+        <div className="relative border border-cyan-500/30 p-10 bg-black/75">
           
           <div className="mb-10 text-center">
-            <h2 className="font-mono text-[24px] font-bold tracking-[0.1em] text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.7)] uppercase whitespace-nowrap">
+            <h2 className="text-[24px] font-bold tracking-[0.1em] text-cyan-400 drop-shadow-[0_0_12px_rgba(34,211,238,0.8)] uppercase whitespace-nowrap">
               Identificación de Piloto
             </h2>
-            <p className="font-mono text-[10px] text-zinc-500 mt-2 tracking-[0.2em] uppercase">
+            <p className="text-[10px] text-zinc-500 mt-2 tracking-[0.2em] uppercase">
               Sistema de Acceso Público A316
             </p>
             
-            {/* Divisor central */}
             <div className="relative mt-8 flex items-center justify-center">
               <div className="w-full h-[1px] bg-zinc-800" />
               <div className="absolute bg-cyan-500 w-2.5 h-2.5 rotate-45 border border-black shadow-[0_0_8px_#22d3ee]" />
@@ -131,26 +130,26 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
 
           <form onSubmit={handleAccess} className="space-y-8">
             <div className="space-y-3">
-              <label className="block font-mono text-[10px] text-zinc-600 uppercase tracking-widest ml-1">User_ID</label>
+              <label className="block text-[10px] text-zinc-600 uppercase tracking-widest ml-1">User_ID</label>
               <input
                 required
                 autoFocus
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-black/40 border border-cyan-900/60 p-4 font-mono text-sm text-cyan-400 focus:outline-none focus:border-cyan-400 transition-all uppercase placeholder:text-zinc-800 shadow-inner"
+                className="w-full bg-black/40 border border-cyan-900/60 p-4 text-sm text-cyan-400 focus:outline-none focus:border-cyan-400 transition-all uppercase placeholder:text-zinc-800 shadow-inner"
                 placeholder="ESCRIBE TU ALIAS..."
                 maxLength={12}
               />
             </div>
 
             <div className="space-y-3">
-              <label className="block font-mono text-[10px] text-zinc-600 uppercase tracking-widest ml-1">Link_Code (Opcional)</label>
+              <label className="block text-[10px] text-zinc-600 uppercase tracking-widest ml-1">Link_Code (Opcional)</label>
               <input
                 type="text"
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value)}
-                className="w-full bg-black/40 border border-cyan-900/40 p-4 font-mono text-sm text-zinc-300 focus:outline-none focus:border-cyan-400/50 transition-all uppercase placeholder:text-zinc-800 shadow-inner"
+                className="w-full bg-black/40 border border-cyan-900/40 p-4 text-sm text-zinc-300 focus:outline-none focus:border-cyan-400/50 transition-all uppercase placeholder:text-zinc-800 shadow-inner"
                 placeholder="CÓDIGO PARA UNIRSE..."
                 maxLength={6}
               />
@@ -158,28 +157,27 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
 
             {error && (
               <div className="py-2 border-l-2 border-red-500 bg-red-500/10">
-                <p className="font-mono text-[10px] text-red-500 pl-3 uppercase tracking-tighter"> 
+                <p className="text-[10px] text-red-500 pl-3 uppercase tracking-tighter"> 
                   {">"} {error} 
                 </p>
               </div>
             )}
 
-            {/* BOTÓN CALIBRADO: Ahora con texto visible y bordes definidos */}
+            {/* BOTÓN CALIBRADO PARA MÁXIMA VISIBILIDAD */}
             <button
               disabled={loading || !username}
-              className="w-full py-5 bg-cyan-950/20 border border-cyan-500/50 text-cyan-400 font-mono text-xs font-bold uppercase hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-10 shadow-[0_0_20px_rgba(6,182,212,0.15)] group relative overflow-hidden"
+              className="w-full py-5 bg-cyan-500/10 border border-cyan-500/60 text-cyan-300 font-bold uppercase hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-20 shadow-[0_0_20px_rgba(6,182,212,0.2)] group relative overflow-hidden"
             >
-              <span className="relative z-10 tracking-[0.15em]">
-                {loading ? 'ESTABLECIENDO ENLACE...' : roomCode ? 'VINCULAR A ESCUADRA' : 'INICIAR NUEVA MATRIZ'}
+              <span className="relative z-10 tracking-[0.2em] drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">
+                {loading ? 'SINC_ENLACE...' : roomCode ? 'VINCULAR A ESCUADRA' : 'INICIAR NUEVA MATRIZ'}
               </span>
-              {/* Efecto de hover mejorado */}
               <div className="absolute inset-0 bg-cyan-400 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
             </button>
           </form>
 
           {/* Decoración Inferior */}
-          <div className="mt-12 flex flex-col items-center gap-2 opacity-60">
-            <div className="w-2.5 h-2.5 rounded-full border border-cyan-400 shadow-[0_0_8px_#22d3ee]" />
+          <div className="mt-12 flex flex-col items-center gap-2 opacity-70">
+            <div className="w-2.5 h-2.5 rounded-full border border-cyan-400 shadow-[0_0_10px_#22d3ee]" />
             <div className="w-[1px] h-6 bg-gradient-to-b from-cyan-400 to-transparent" />
           </div>
         </div>
