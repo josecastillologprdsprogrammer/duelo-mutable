@@ -8,8 +8,8 @@ import { SKILLS_CATALOGO } from '../lib/skillsEngine';
 import ResultsModal from './components/ResultsModal';
 
 /**
- * COMPONENTE: SLOT DE HABILIDAD
- * Representa una unidad de acción táctica en el HUD.
+ * COMPONENTE: SLOT DE HABILIDAD (REFACTORIZADO)
+ * Hitbox ampliada, integración de assets gráficos persistentes y feedback de estado.
  */
 function SkillSlot({ skill, desbloqueada, activa, esNueva, energia, onActivar }: any) {
   const puedePagar = energia >= skill.costo;
@@ -19,27 +19,48 @@ function SkillSlot({ skill, desbloqueada, activa, esNueva, energia, onActivar }:
     <div 
       onClick={() => clickeable && onActivar(skill.id)}
       className={`
-        relative flex flex-col items-center justify-center w-14 h-14 border-2 transition-all duration-500 rounded-sm
-        ${desbloqueada ? 'opacity-100 scale-100' : 'opacity-10 scale-90 grayscale'}
+        relative flex flex-col items-center justify-center w-20 h-20 border-2 transition-all duration-300 rounded-sm overflow-hidden bg-black
+        ${desbloqueada ? 'opacity-100 scale-100' : 'opacity-40 scale-95 grayscale blur-[0.5px]'}
         ${esNueva ? 'animate-bounce border-white shadow-[0_0_20px_white] z-10' : 'border-zinc-800'}
-        ${activa ? 'bg-white text-black shadow-[0_0_15px_white]' : 'bg-transparent'}
-        ${clickeable ? 'cursor-pointer hover:border-cyan-500' : 'cursor-default'}
+        ${activa ? 'border-cyan-400 shadow-[0_0_15px_cyan]' : ''}
+        ${clickeable ? 'cursor-pointer hover:border-cyan-500 hover:shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'cursor-default'}
       `}
     >
-      <span className={`text-[9px] font-bold font-mono ${activa ? 'text-black' : 'text-zinc-400'}`}>
-        {skill.tecla.replace('Digit', '').replace('Key', '')}
-      </span>
-      <div className="w-full h-[1px] my-1" style={{ backgroundColor: desbloqueada ? skill.color : '#333' }} />
-      <span className={`text-[7px] uppercase text-center leading-none font-bold tracking-tighter
-        ${activa ? 'text-black' : 'text-zinc-300'}`}>
-        {skill.nombre.substring(0, 6)}
-      </span>
-      {desbloqueada && !activa && (
-        <span className={`text-[7px] mt-1 font-mono ${puedePagar ? 'text-yellow-500' : 'text-zinc-600'}`}>
-          {skill.costo}
+      {/* CAPA 1: ASSET GRÁFICO (Siempre renderizado) */}
+      <img 
+        src={`/skills/${skill.id}.png`} 
+        alt={skill.nombre}
+        className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 
+          ${activa ? 'opacity-100 mix-blend-screen' : 'opacity-60'}
+        `}
+        onError={(e) => { 
+          e.currentTarget.style.display = 'none'; 
+        }}
+      />
+
+      {/* CAPA 2: OVERLAY DE DATOS Y FEEDBACK */}
+      <div className="absolute inset-0 z-10 flex flex-col justify-between p-1 bg-gradient-to-t from-black/90 via-black/20 to-black/70">
+        <div className="flex justify-between w-full">
+          <span className={`text-[10px] font-bold font-mono leading-none drop-shadow-md ${activa ? 'text-cyan-400' : 'text-white'}`}>
+            [{skill.tecla.replace('Digit', '').replace('Key', '')}]
+          </span>
+          {desbloqueada && !activa && (
+            <span className={`text-[10px] font-mono leading-none font-bold drop-shadow-md ${puedePagar ? 'text-yellow-500' : 'text-red-500'}`}>
+              {skill.costo}E
+            </span>
+          )}
+        </div>
+        
+        <span className={`text-[8px] uppercase text-center font-bold tracking-tighter leading-none mt-auto drop-shadow-md
+          ${activa ? 'text-cyan-400' : 'text-zinc-300'}`}>
+          {skill.nombre}
         </span>
+      </div>
+
+      {/* CAPA 3: INDICADOR DE EJECUCIÓN */}
+      {activa && (
+        <div className="absolute inset-x-0 bottom-0 h-1.5 bg-cyan-400 animate-pulse z-20 shadow-[0_0_15px_cyan]" />
       )}
-      <div className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: skill.color }} />
     </div>
   );
 }
@@ -214,9 +235,9 @@ export default function Home() {
         </div>
 
         {/* HUD DE COMBATE Y PANEL ORBITAL */}
-        <div className="flex gap-6 items-center">
-          <div className="flex flex-col gap-2">
-            <span className="text-[8px] font-mono text-zinc-600 uppercase text-center mb-1">Buffs</span>
+        <div className="flex gap-8 items-center">
+          <div className="flex flex-col gap-3">
+            <span className="text-[9px] font-mono text-cyan-500 uppercase text-center tracking-widest">Sistemas</span>
             {SKILLS_CATALOGO.filter(s => s.tipo === 'buff').map(skill => (
               <SkillSlot key={skill.id} skill={skill} desbloqueada={skillsDesbloqueadas.includes(skill.id)} activa={skillsActivas[skill.id]} esNueva={ultimaSkillRecibida === skill.id} energia={energia} onActivar={activarSkillManualmente} />
             ))}
@@ -229,8 +250,8 @@ export default function Home() {
             motor={{ ...motor, skillsActivas: { ...motor.skillsActivas, ...motor.debuffsEnemigos } }} 
           />
 
-          <div className="flex flex-col gap-2">
-            <span className="text-[8px] font-mono text-zinc-600 uppercase text-center mb-1">Debuffs</span>
+          <div className="flex flex-col gap-3">
+            <span className="text-[9px] font-mono text-red-500 uppercase text-center tracking-widest">Armamento</span>
             {SKILLS_CATALOGO.filter(s => s.tipo === 'debuff').map(skill => (
               <SkillSlot key={skill.id} skill={skill} desbloqueada={skillsDesbloqueadas.includes(skill.id)} activa={skillsActivas[skill.id]} esNueva={ultimaSkillRecibida === skill.id} energia={energia} onActivar={activarSkillManualmente} />
             ))}
@@ -254,26 +275,53 @@ export default function Home() {
       <div className="flex-1 flex flex-col gap-6 justify-center">
         <div className="flex justify-between items-center border-b border-zinc-900 pb-2 px-1">
           <h2 className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Telemetría_Escuadra</h2>
-          <span className="text-[10px] font-mono text-zinc-300 font-bold tabular-nums">{scoreEscuadra} TOTAL_PTS</span>
+          <span className="text-[10px] font-mono text-cyan-500 font-bold tabular-nums">{scoreEscuadra} TOTAL_PTS</span>
         </div>
         
         {slotsOponentes.map((slotId) => {
           const datosRival = telemetriaRivales[slotId];
           const infoJugador = jugadores.find(j => j.slot === slotId);
+          
+          // Filtrar debuffs activos que el rival está sufriendo
+          const debuffsRival = Object.keys(datosRival?.skills || {}).filter(skillId => {
+            const s = SKILLS_CATALOGO.find(cat => cat.id === skillId);
+            return s && s.tipo === 'debuff';
+          });
 
           return (
-            <OrbitalPanel 
-              key={slotId} 
-              idJugador={infoJugador?.username || `Slot_0${slotId}`} 
-              size={200} 
-              esLocal={false} 
-              motor={{ 
-                ...motor, 
-                score: datosRival?.score || 0, 
-                skillsActivas: datosRival?.skills || {}, 
-                seleccionadosRef: { current: motor.nodosRef.current.filter(n => datosRival?.nodos.includes(n.id)) } 
-              }} 
-            />
+            <div key={slotId} className="flex flex-col gap-2 bg-zinc-950/50 p-2 border border-zinc-900/50 rounded-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-[9px] font-mono text-zinc-400 uppercase">{infoJugador?.username || `Slot_0${slotId}`}</span>
+                <span className="text-[9px] font-mono text-yellow-500">{datosRival?.score || 0} PTS</span>
+              </div>
+              
+              <div className="flex gap-4 items-center">
+                <OrbitalPanel 
+                  idJugador={infoJugador?.username || `Slot_0${slotId}`} 
+                  size={180} 
+                  esLocal={false} 
+                  motor={{ 
+                    ...motor, 
+                    score: datosRival?.score || 0, 
+                    skillsActivas: datosRival?.skills || {}, 
+                    seleccionadosRef: { current: motor.nodosRef.current.filter(n => datosRival?.nodos?.includes(n.id)) } 
+                  }} 
+                />
+                
+                {/* Visualización de Debuffs inyectados al rival */}
+                <div className="flex flex-col gap-1">
+                  {debuffsRival.map(skillId => {
+                    const skill = SKILLS_CATALOGO.find(s => s.id === skillId);
+                    return skill ? (
+                      <div key={skillId} className="w-8 h-8 relative border border-red-500 rounded-sm overflow-hidden" title={`Sufriendo: ${skill.nombre}`}>
+                        <img src={`/skills/${skill.id}.png`} alt={skill.nombre} className="absolute inset-0 w-full h-full object-cover mix-blend-screen" />
+                        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-red-500 animate-pulse" />
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            </div>
           );
         })}
 
