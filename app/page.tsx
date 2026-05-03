@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import OrbitalPanel from './components/OrbitalPanel'; 
 import AccessModal from './components/AccessModal';
+import GuideModal from './components/GuideModal'; // Importación del nuevo módulo
 import { useMotorOrbital } from '../hooks/useMotorOrbital';
 import { SKILLS_CATALOGO } from '../lib/skillsEngine';
 import ResultsModal from './components/ResultsModal';
@@ -58,6 +59,7 @@ function SkillSlot({ skill, desbloqueada, activa, esNueva, energia, onActivar }:
 export default function Home() {
   const [userSession, setUserSession] = useState<{ id: string; username: string; slot: number; roomCode: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const [guiaVisible, setGuiaVisible] = useState(false); // Estado para la guía
   
   const motor = useMotorOrbital(userSession);
 
@@ -134,19 +136,27 @@ export default function Home() {
               className="flex items-center gap-3 group cursor-pointer" 
               onClick={copiarCodigo}
             >
-              {/* Icono de Copiar a la IZQUIERDA */}
               <div className={`p-1.5 border border-zinc-800 rounded-sm transition-all ${copiado ? 'bg-green-500/20 border-green-500' : 'bg-black/40 group-hover:border-cyan-500'}`}>
                 <svg className={`w-4 h-4 ${copiado ? 'text-green-500' : 'text-zinc-500 group-hover:text-cyan-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="C8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="C8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002-2h2a2 2 0 002-2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                 </svg>
               </div>
               <h1 className="text-3xl font-bold tracking-tighter text-white uppercase drop-shadow-md">
                 SALA_{userSession.roomCode}
               </h1>
             </div>
-            <button onClick={abortarEnlace} className="text-[9px] text-zinc-500 hover:text-red-500 border border-zinc-800 px-3 py-1 rounded-sm uppercase transition-all bg-black/20">
-              [ Salir de la Sala ]
-            </button>
+            
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setGuiaVisible(true)}
+                className="text-[9px] text-cyan-500 hover:text-white border border-cyan-800 px-3 py-1 rounded-sm uppercase transition-all bg-cyan-950/20 hover:bg-cyan-500/20"
+              >
+                [ Guía Operativa ]
+              </button>
+              <button onClick={abortarEnlace} className="text-[9px] text-zinc-500 hover:text-red-500 border border-zinc-800 px-3 py-1 rounded-sm uppercase transition-all bg-black/20">
+                [ Salir de la Sala ]
+              </button>
+            </div>
           </div>
           
           <div className="flex gap-1.5 items-center">
@@ -223,13 +233,12 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- [F] TELEMETRÍA (FAR RIGHT) - AJUSTADA PARA VER LOS 3 --- */}
+        {/* --- [F] TELEMETRÍA (FAR RIGHT) --- */}
         <div className="absolute right-6 top-[10%] bottom-[8%] w-[22%] flex flex-col gap-4">
           <div className="flex justify-between items-center border-b border-zinc-900 pb-2 px-1">
             <h2 className="text-[11px] text-zinc-500 uppercase tracking-widest font-bold">Puntos Totales del Lobby</h2>
             <span className="text-[11px] text-cyan-500 font-bold tabular-nums">{scoreEscuadra.toLocaleString()} PTS</span>
           </div>
-          {/* Contenedor sin scroll visible y con gaps ajustados */}
           <div className="flex-1 flex flex-col gap-4 overflow-y-auto no-scrollbar pr-1">
             {slotsOponentes.map((slotId) => {
               const datosRival = telemetriaRivales[slotId];
@@ -240,7 +249,6 @@ export default function Home() {
                     <span className="text-[9px] text-zinc-400 uppercase font-bold">{infoJugador?.username || `SLOT_0${slotId}`}</span>
                     <span className="text-[10px] text-yellow-500 font-bold tabular-nums">{(datosRival?.score || 0).toLocaleString()}</span>
                   </div>
-                  {/* Tamaño de mini-radar ajustado a 150 para garantizar que quepan los 3 en la mayoría de resoluciones */}
                   <OrbitalPanel 
                     idJugador={infoJugador?.username || `SLOT_0${slotId}`} 
                     size={150} 
@@ -268,6 +276,9 @@ export default function Home() {
           <p className="font-mono text-cyan-500 tracking-[1.5em] uppercase text-sm mt-4">Sincronizando Enlace Escuadra</p>
         </div>
       )}
+
+      {/* MODAL DE GUÍA OPERATIVA */}
+      {guiaVisible && <GuideModal onClose={() => setGuiaVisible(false)} />}
     </main>
   );
 }
