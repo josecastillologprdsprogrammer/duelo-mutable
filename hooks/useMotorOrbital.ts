@@ -1,5 +1,5 @@
 // hooks/useMotorOrbital.ts
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
   Nodo, obtenerCoords, esConvexo, esProporcional, ordenarNodosCentroide 
@@ -9,16 +9,19 @@ import { SKILLS_CATALOGO } from '@/lib/skillsEngine';
 const PALETA_COLORES = ['#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'];
 const COLOR_CONGELADO = '#00e5ff';
 const TIEMPO_PARTIDA = 300; 
-const DURACION_SKILL_MS = 8000; 
+
+// Helper para duraciones dinámicas
+const OBTENER_DURACION = (skillId: string) => {
+  if (skillId === 'd3' || skillId === 'd4') return 5000; // VOID y GHOST (5s)
+  return 10000; // Resto (10s)
+};
 
 export const useMotorOrbital = (userSession: any) => {
   const nodosRef = useRef<Nodo[]>([]);
   const seleccionadosRef = useRef<Nodo[]>([]);
   const canalRef = useRef<any>(null);
   
-  // Memoria inmutable para recordar las órbitas originales
   const anillosBaseRef = useRef<{ [key: number]: number }>({});
-  
   const scoreRef = useRef(0);
   const skillsActivasRef = useRef<{ [key: string]: number }>({});
 
@@ -35,8 +38,9 @@ export const useMotorOrbital = (userSession: any) => {
   const [skillsDesbloqueadas, setSkillsDesbloqueadas] = useState<string[]>([]);
   const [ultimaSkillRecibida, setUltimaSkillRecibida] = useState<string | null>(null);
   
-  const [skillsActivas, setSkillsActivas] = useState<{ [key: string]: number }>({});
-  const [debuffsEnemigos, setDebuffsEnemigos] = useState<{ [key: string]: boolean }>({});
+  // DOMINIOS SEPARADOS
+  const [skillsActivas, setSkillsActivas] = useState<{ [key: string]: number }>({}); // Todo lo que YO lanzo (Cooldowns)
+  const [debuffsEnemigos, setDebuffsEnemigos] = useState<{ [key: string]: boolean }>({}); // Lo que ME lanzan a mí
 
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { skillsActivasRef.current = skillsActivas; }, [skillsActivas]);
@@ -75,7 +79,7 @@ export const useMotorOrbital = (userSession: any) => {
         
         return requiereSync ? estadoLimpio : prev;
       });
-    }, 1000); 
+    }, 500); // Checkeo más rápido para precisión de 5s
 
     return () => clearInterval(gcInterval);
   }, [estadoPartida, transmitirSync]);
@@ -87,7 +91,7 @@ export const useMotorOrbital = (userSession: any) => {
     const skill = SKILLS_CATALOGO.find(s => s.id === skillId);
     if (skill && skillsDesbloqueadas.includes(skill.id) && energia >= skill.costo && !skillsActivas[skill.id]) {
       
-      const expireAt = Date.now() + DURACION_SKILL_MS; 
+      const expireAt = Date.now() + OBTENER_DURACION(skill.id); 
       const nuevasSkills = { ...skillsActivas, [skill.id]: expireAt };
       
       setEnergia(prev => prev - skill.costo);
@@ -137,28 +141,31 @@ export const useMotorOrbital = (userSession: any) => {
     setDebuffsEnemigos(debuffsActivos);
   }, [telemetriaRivales]);
 
-  // --- 6. MOTOR FÍSICO CON RECUPERACIÓN ELÁSTICA ---
+  // --- 6. MOTOR FÍSICO CON INTERSECCIÓN DE DOMINIOS ---
   useEffect(() => {
     let animationFrameId: number;
     const tick = () => {
       if (estadoPartida === 'jugando') {
-        // Velocidad ajustada: 40% más rápido que la base original para mejor 'game feel'
         let multVelocidad = 1.4; 
         let direccion = 1;
 
-        if (skillsActivas['b1']) multVelocidad *= 0.3; 
-        if (debuffsEnemigos['d5']) multVelocidad *= 3.0; 
-        if (debuffsEnemigos['d2']) direccion = -1; 
+        // Reglas de colisión matemática (Buffs míos vs Debuffs del rival)
+        if (skillsActivas['b1']) multVelocidad *= 0.3; // CHRONOS (Propio)
+        if (debuffsEnemigos['d5']) multVelocidad *= 3.0; // OVER (Enemigo)
+        if (debuffsEnemigos['d2']) direccion = -1; // REVERSE (Enemigo)
 
         nodosRef.current = nodosRef.current.map(n => {
           const anilloOriginal = anillosBaseRef.current[n.id] || n.anillo;
           let anilloActual = n.anillo;
 
           if (debuffsEnemigos['d3']) {
-            // Succión agresiva hacia el centro
-            anilloActual = Math.max(anilloActual - 2, 50); 
+            // VOID Enemigo: Succión agresiva
+            anilloActual = Math.max(anilloActual - 3, 20); 
+          } else if (skillsActivas['b2']) {
+            // MAGNETAR Propio: Contracción táctica de órbitas
+            anilloActual = Math.max(anilloActual - 1.5, anilloOriginal * 0.65);
           } else if (anilloActual < anilloOriginal) {
-            // Recuperación elástica hacia la órbita original
+            // Recuperación elástica
             anilloActual = Math.min(anilloActual + 2, anilloOriginal);
           }
 
@@ -213,9 +220,7 @@ export const useMotorOrbital = (userSession: any) => {
       if (estadoPartida !== 'jugando') return;
 
       const skill = SKILLS_CATALOGO.find(s => s.tecla === e.code);
-      if (skill) {
-        activarSkillManualmente(skill.id);
-      }
+      if (skill) activarSkillManualmente(skill.id);
 
       if (e.code === 'Space') {
         e.preventDefault();
@@ -267,18 +272,11 @@ export const useMotorOrbital = (userSession: any) => {
     return () => { canal.unsubscribe(); canalDB.unsubscribe(); };
   }, [userSession]);
 
-  // CORRECCIÓN ARQUITECTÓNICA: Validación estricta de 4 nodos
   useEffect(() => {
-    // 1. Verificamos que existan datos
     if (jugadores.length === 0) return;
-    
-    // 2. Condición de capacidad: Exactamente 4 jugadores en la sala
     const escuadraCompleta = jugadores.length === 4;
-    
-    // 3. Condición de estado: Todos los presentes están listos
     const todosListos = jugadores.every(p => p.listo === true);
 
-    // 4. Si se cumplen las condiciones y la partida está en espera, iniciamos.
     if (escuadraCompleta && todosListos && estadoPartida === 'espera') {
       setEstadoPartida('cuenta_atras');
       setCountdown(10);
@@ -298,7 +296,6 @@ export const useMotorOrbital = (userSession: any) => {
     }
   }, [estadoPartida, countdown]);
 
-  // --- CONTROL DE TIEMPO Y GAME OVER ---
   useEffect(() => {
     if (estadoPartida === 'jugando' && tiempo > 0) {
       const timer = setInterval(() => setTiempo(t => t - 1), 1000);
@@ -308,13 +305,11 @@ export const useMotorOrbital = (userSession: any) => {
     }
   }, [estadoPartida, tiempo]);
 
-  // CARGA INICIAL CON POBLADO DE MEMORIA BASE
   useEffect(() => {
     const init = async () => {
       const { data } = await supabase.from('mentes').select('*').order('id');
       if (data) {
         nodosRef.current = data;
-        // Guardamos las distancias radiales originales en memoria
         const baseRings: { [key: number]: number } = {};
         data.forEach(n => { baseRings[n.id] = n.anillo; });
         anillosBaseRef.current = baseRings;
@@ -323,9 +318,20 @@ export const useMotorOrbital = (userSession: any) => {
     init();
   }, []);
 
+  // FILTRO ARQUITECTÓNICO: Creamos un objeto limpio exclusivamente para la UI local
+  // Contiene SOLO los buffs que yo lancé y los debuffs que los enemigos me lanzaron.
+  const efectosLocales = useMemo(() => {
+    const buffsPropios = Object.keys(skillsActivas).reduce((acc, id) => {
+      if (id.startsWith('b')) acc[id] = skillsActivas[id];
+      return acc;
+    }, {} as Record<string, number>);
+    return { ...buffsPropios, ...debuffsEnemigos };
+  }, [skillsActivas, debuffsEnemigos]);
+
   return {
     nodosRef, seleccionadosRef, estadoPartida, tiempo, score, energia, alerta, 
     skillsDesbloqueadas, ultimaSkillRecibida, skillsActivas, debuffsEnemigos,
+    efectosLocales, // <- NUEVA EXPORTACIÓN PARA EL PANEL VISUAL
     jugadores, countdown, telemetriaRivales,
     marcarListo, 
     activarSkillManualmente,
