@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import OrbitalPanel from './components/OrbitalPanel'; 
 import AccessModal from './components/AccessModal';
-import GuideModal from './components/GuideModal'; // Importación del nuevo módulo
+import GuideModal from './components/GuideModal'; 
+import ResultsModal from './components/ResultsModal'; // Ahora con persistencia a Supabase
 import { useMotorOrbital } from '../hooks/useMotorOrbital';
 import { SKILLS_CATALOGO } from '../lib/skillsEngine';
-import ResultsModal from './components/ResultsModal';
 
 /**
- * COMPONENTE: SLOT DE HABILIDAD
+ * COMPONENTE: SLOT DE HABILIDAD (HUD LATERAL)
  */
 function SkillSlot({ skill, desbloqueada, activa, esNueva, energia, onActivar }: any) {
   const puedePagar = energia >= skill.costo;
@@ -59,7 +59,7 @@ function SkillSlot({ skill, desbloqueada, activa, esNueva, energia, onActivar }:
 export default function Home() {
   const [userSession, setUserSession] = useState<{ id: string; username: string; slot: number; roomCode: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
-  const [guiaVisible, setGuiaVisible] = useState(false); // Estado para la guía
+  const [guiaVisible, setGuiaVisible] = useState(false);
   
   const motor = useMotorOrbital(userSession);
 
@@ -95,6 +95,7 @@ export default function Home() {
     return `${m}:${s}`;
   };
 
+  // LOBBY DE IDENTIFICACIÓN (Incluye Hall of Fame interno)
   if (!userSession) return <AccessModal onAccessGranted={(data) => setUserSession(data)} />;
 
   const SLOTS_TOTALES = [1, 2, 3, 4];
@@ -111,7 +112,7 @@ export default function Home() {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      {/* CAPA 0: EL BACKGROUND */}
+      {/* CAPA 0: EL BACKGROUND (CHASIS OPERATIVO) */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
           src="/bg.png" 
@@ -121,12 +122,17 @@ export default function Home() {
         <div className="absolute inset-0 bg-radial-gradient from-transparent to-black/60 pointer-events-none" />
       </div>
 
-      {/* CAPA 10: INTERFAZ */}
+      {/* CAPA 10: INTERFAZ TÁCTICA */}
       <div className="relative z-10 w-full h-full">
         
-        {/* MODAL DE RESULTADOS */}
+        {/* MODAL DE RESULTADOS (Sincronización de Telemetría Final) */}
         {estadoPartida === 'terminado' && (
-          <ResultsModal scoreLocal={score} telemetriaRivales={telemetriaRivales} jugadores={jugadores} userSession={userSession} />
+          <ResultsModal 
+            scoreLocal={score} 
+            telemetriaRivales={telemetriaRivales} 
+            jugadores={jugadores} 
+            userSession={userSession} 
+          />
         )}
 
         {/* --- [A] BLOQUE DE SALA (TOP LEFT) --- */}
@@ -149,7 +155,7 @@ export default function Home() {
             <div className="flex gap-2">
               <button 
                 onClick={() => setGuiaVisible(true)}
-                className="text-[9px] text-cyan-500 hover:text-white border border-cyan-800 px-3 py-1 rounded-sm uppercase transition-all bg-cyan-950/20 hover:bg-cyan-500/20"
+                className="text-[9px] text-cyan-500 hover:text-white border border-cyan-800 px-3 py-1 rounded-sm uppercase transition-all bg-cyan-950/20 hover:bg-cyan-500/20 shadow-[0_0_10px_rgba(6,182,212,0.1)]"
               >
                 [ Guía Operativa ]
               </button>
@@ -177,12 +183,12 @@ export default function Home() {
               </div>
             </div>
             <p className="text-[11px] text-cyan-500 uppercase tracking-[0.2em] font-bold">
-              Nick del Jugador: {userSession.username} | Posicionamiento en la Partida: {userSession.slot}
+              Nick del Jugador: {userSession.username} | Posicionamiento: SLOT_0{userSession.slot}
             </p>
           </div>
         </div>
 
-        {/* --- [B] BLOQUE DE TIEMPO --- */}
+        {/* --- [B] BLOQUE DE TIEMPO (CENTER TOP) --- */}
         <div className="absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
           <span className="text-[10px] text-zinc-500 uppercase tracking-[0.5em] mb-1">Temporizador</span>
           <p className={`text-6xl font-bold font-mono leading-none drop-shadow-2xl ${tiempo <= 30 ? 'text-red-500 animate-pulse' : 'text-zinc-200'}`}>
@@ -193,7 +199,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* --- [C] NÚCLEO CENTRAL --- */}
+        {/* --- [C] NÚCLEO CENTRAL (RADAR ORBITAL) --- */}
         <div className="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2">
           <OrbitalPanel 
             idJugador={userSession.username} 
@@ -203,7 +209,7 @@ export default function Home() {
           />
         </div>
 
-        {/* --- [D] COLUMNAS DE SKILLS --- */}
+        {/* --- [D] COLUMNAS DE HABILIDADES --- */}
         <div className="absolute left-[12%] top-[55%] -translate-y-1/2 flex flex-col gap-4 items-center">
           <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-[0.3em] mb-2">Mejoras</span>
           {SKILLS_CATALOGO.filter(s => s.tipo === 'buff').map(skill => (
@@ -218,10 +224,14 @@ export default function Home() {
           ))}
         </div>
 
-        {/* --- [E] BOTÓN DE ACCIÓN --- */}
+        {/* --- [E] BOTÓN DE ACCIÓN (ESTABLECER ENLACE) --- */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2">
           {estadoPartida === 'espera' ? (
-            <button onClick={marcarListo} disabled={yoEstoyListo} className={`px-20 py-4 border-2 text-[12px] font-bold tracking-[0.4em] uppercase transition-all shadow-[0_0_30px_rgba(0,0,0,0.5)] ${yoEstoyListo ? 'border-green-900 text-green-700 bg-green-950/20' : 'border-cyan-500 text-cyan-500 hover:bg-cyan-500 hover:text-black shadow-[0_0_30px_rgba(6,182,212,0.2)]'}`}>
+            <button 
+              onClick={marcarListo} 
+              disabled={yoEstoyListo} 
+              className={`px-20 py-4 border-2 text-[12px] font-bold tracking-[0.4em] uppercase transition-all shadow-[0_0_30px_rgba(0,0,0,0.5)] ${yoEstoyListo ? 'border-green-900 text-green-700 bg-green-950/20' : 'border-cyan-500 text-cyan-500 hover:bg-cyan-500 hover:text-black shadow-[0_0_30px_rgba(6,182,212,0.2)]'}`}
+            >
               {yoEstoyListo ? 'Sincronizado' : 'Establecer Enlace (LISTO)'}
             </button>
           ) : (
@@ -233,10 +243,10 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- [F] TELEMETRÍA (FAR RIGHT) --- */}
+        {/* --- [F] TELEMETRÍA DE ESCUADRA (ESTÁTICA, SIN SCROLL) --- */}
         <div className="absolute right-6 top-[10%] bottom-[8%] w-[22%] flex flex-col gap-4">
           <div className="flex justify-between items-center border-b border-zinc-900 pb-2 px-1">
-            <h2 className="text-[11px] text-zinc-500 uppercase tracking-widest font-bold">Puntos Totales del Lobby</h2>
+            <h2 className="text-[11px] text-zinc-500 uppercase tracking-widest font-bold">Puntos Totales</h2>
             <span className="text-[11px] text-cyan-500 font-bold tabular-nums">{scoreEscuadra.toLocaleString()} PTS</span>
           </div>
           <div className="flex-1 flex flex-col gap-4 overflow-y-auto no-scrollbar pr-1">
@@ -267,7 +277,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* OVERLAY DE CUENTA ATRÁS */}
+      {/* OVERLAY: CUENTA REGRESIVA DE ENLACE */}
       {estadoPartida === 'cuenta_atras' && (
         <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/85 backdrop-blur-3xl">
           <span className="font-mono text-[180px] font-bold text-white animate-pulse drop-shadow-[0_0_50px_rgba(255,255,255,0.2)]">
@@ -277,7 +287,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL DE GUÍA OPERATIVA */}
+      {/* MODAL: GUÍA OPERATIVA (OPERACIONES TÁCTICAS) */}
       {guiaVisible && <GuideModal onClose={() => setGuiaVisible(false)} />}
     </main>
   );

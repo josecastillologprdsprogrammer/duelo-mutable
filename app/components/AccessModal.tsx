@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface AccessModalProps {
@@ -23,6 +23,36 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ESTADOS DEL HALL OF FAME
+  const [ranking, setRanking] = useState<any[]>([]);
+  const [filtro, setFiltro] = useState<'semanal' | 'mensual' | 'global'>('global');
+
+  // LÓGICA DE EXTRACCIÓN DE TELEMETRÍA (RANKING)
+  const fetchRanking = useCallback(async () => {
+    let query = supabase
+      .from('ranking_global')
+      .select('username, score, created_at')
+      .order('score', { ascending: false })
+      .limit(5);
+
+    const ahora = new Date();
+    
+    if (filtro === 'semanal') {
+      const haceUnaSemana = new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000);
+      query = query.gte('created_at', haceUnaSemana.toISOString());
+    } else if (filtro === 'mensual') {
+      const haceUnMes = new Date(ahora.setMonth(ahora.getMonth() - 1));
+      query = query.gte('created_at', haceUnMes.toISOString());
+    }
+
+    const { data, error } = await query;
+    if (!error && data) setRanking(data);
+  }, [filtro]);
+
+  useEffect(() => {
+    fetchRanking();
+  }, [fetchRanking]);
 
   useEffect(() => {
     const sessionSaved = localStorage.getItem('A316_SESSION');
@@ -103,7 +133,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/80" />
       </div>
 
-      {/* PANEL DE IDENTIFICACIÓN */}
+      {/* PANEL DE IDENTIFICACIÓN Y RANKING */}
       <div className="relative z-20 w-full max-w-[450px] p-1 bg-cyan-900/10 backdrop-blur-xl border border-cyan-500/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
         
         {/* Esquinas Decorativas con Brillo Intenso */}
@@ -112,9 +142,45 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
         <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-2 border-l-2 border-cyan-400 shadow-[0_0_15px_#22d3ee] z-30" />
         <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-2 border-r-2 border-cyan-400 shadow-[0_0_15px_#22d3ee] z-30" />
 
-        <div className="relative border border-cyan-500/30 p-10 bg-black/75">
+        <div className="relative border border-cyan-500/30 p-8 bg-black/75">
           
-          <div className="mb-10 text-center">
+          {/* SECCIÓN: HALL OF FAME (TOP 5) */}
+          <div className="mb-8 border-b border-zinc-800 pb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-bold">Hall_of_Fame</h3>
+              <div className="flex gap-2">
+                {(['semanal', 'mensual', 'global'] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFiltro(f)}
+                    className={`text-[8px] px-2 py-0.5 border uppercase transition-all duration-300 ${filtro === f ? 'border-cyan-500 text-cyan-400 bg-cyan-500/10 shadow-[0_0_10px_rgba(6,182,212,0.2)]' : 'border-zinc-800 text-zinc-600 hover:text-zinc-400'}`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5 min-h-[105px]">
+              {ranking.map((pilot, i) => (
+                <div key={i} className="flex justify-between items-center bg-cyan-950/5 border-l-2 border-cyan-500/20 px-3 py-1.5 transition-all hover:bg-cyan-500/5">
+                  <span className="text-[11px] text-zinc-400">
+                    <span className="text-cyan-600 mr-2 font-bold">0{i+1}</span>
+                    {pilot.username}
+                  </span>
+                  <span className="text-[11px] font-bold text-yellow-500 tabular-nums">
+                    {pilot.score.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+              {ranking.length === 0 && (
+                <p className="text-[9px] text-zinc-700 uppercase mt-4 text-center tracking-widest italic">Esperando telemetría de red...</p>
+              )}
+            </div>
+          </div>
+
+          {/* SECCIÓN: IDENTIFICACIÓN */}
+          <div className="mb-8 text-center">
             <h2 className="text-[24px] font-bold tracking-[0.1em] text-cyan-400 drop-shadow-[0_0_12px_rgba(34,211,238,0.8)] uppercase whitespace-nowrap">
               Identificación de Piloto
             </h2>
@@ -128,7 +194,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
             </div>
           </div>
 
-          <form onSubmit={handleAccess} className="space-y-8">
+          <form onSubmit={handleAccess} className="space-y-6">
             <div className="space-y-3">
               <label className="block text-[10px] text-zinc-600 uppercase tracking-widest ml-1">User_ID</label>
               <input
@@ -137,7 +203,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-black/40 border border-cyan-900/60 p-4 text-sm text-cyan-400 focus:outline-none focus:border-cyan-400 transition-all uppercase placeholder:text-zinc-800 shadow-inner"
+                className="w-full bg-black/40 border border-cyan-900/60 p-4 text-sm text-cyan-400 focus:outline-none focus:border-cyan-400 transition-all uppercase placeholder:text-zinc-900 shadow-inner"
                 placeholder="ESCRIBE TU ALIAS..."
                 maxLength={12}
               />
@@ -149,7 +215,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
                 type="text"
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value)}
-                className="w-full bg-black/40 border border-cyan-900/40 p-4 text-sm text-zinc-300 focus:outline-none focus:border-cyan-400/50 transition-all uppercase placeholder:text-zinc-800 shadow-inner"
+                className="w-full bg-black/40 border border-cyan-900/40 p-4 text-sm text-zinc-300 focus:outline-none focus:border-cyan-400/50 transition-all uppercase placeholder:text-zinc-900 shadow-inner"
                 placeholder="CÓDIGO PARA UNIRSE..."
                 maxLength={6}
               />
@@ -163,7 +229,6 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
               </div>
             )}
 
-            {/* BOTÓN CALIBRADO PARA MÁXIMA VISIBILIDAD */}
             <button
               disabled={loading || !username}
               className="w-full py-5 bg-cyan-500/10 border border-cyan-500/60 text-cyan-300 font-bold uppercase hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-20 shadow-[0_0_20px_rgba(6,182,212,0.2)] group relative overflow-hidden"
@@ -176,7 +241,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
           </form>
 
           {/* Decoración Inferior */}
-          <div className="mt-12 flex flex-col items-center gap-2 opacity-70">
+          <div className="mt-10 flex flex-col items-center gap-2 opacity-70">
             <div className="w-2.5 h-2.5 rounded-full border border-cyan-400 shadow-[0_0_10px_#22d3ee]" />
             <div className="w-[1px] h-6 bg-gradient-to-b from-cyan-400 to-transparent" />
           </div>

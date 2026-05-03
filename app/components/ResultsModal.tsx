@@ -1,92 +1,134 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+
 interface ResultsModalProps {
   scoreLocal: number;
-  telemetriaRivales: any;
+  telemetriaRivales: Record<number, any>;
   jugadores: any[];
-  userSession: any;
+  userSession: { id: string; username: string; roomCode: string } | null;
 }
 
 export default function ResultsModal({ scoreLocal, telemetriaRivales, jugadores, userSession }: ResultsModalProps) {
-  
-  // 1. Procesar y unificar la data de toda la escuadra
+  const [guardado, setGuardado] = useState(false);
+
+  // 1. Lógica de Persistencia (Guardar en Supabase)
+  useEffect(() => {
+    const registrarRecord = async () => {
+      if (scoreLocal <= 0 || !userSession?.username) return;
+
+      const { error } = await supabase
+        .from('ranking_global')
+        .insert([{ 
+          username: userSession.username, 
+          score: scoreLocal 
+        }]);
+
+      if (!error) {
+        setGuardado(true);
+        console.log("Telemetría sincronizada con el Hall of Fame.");
+      }
+    };
+    registrarRecord();
+  }, [scoreLocal, userSession?.username]);
+
+  // 2. Procesar y unificar el Ranking de la Escuadra
   const ranking = jugadores.map(jugador => {
-    if (jugador.id === userSession.id) {
+    if (jugador.id === userSession?.id) {
       return { ...jugador, finalScore: scoreLocal, esLocal: true };
     }
     const dataRival = telemetriaRivales[jugador.slot];
     return { ...jugador, finalScore: dataRival?.score || 0, esLocal: false };
-  }).sort((a, b) => b.finalScore - a.finalScore); // Orden descendente
+  }).sort((a, b) => b.finalScore - a.finalScore);
 
   const ganador = ranking[0];
-  const esVictoria = ganador?.id === userSession.id;
+  const esVictoria = ganador?.id === userSession?.id;
 
-  const cerrarConexion = () => {
-    // Para la V1, un reinicio forzado limpia la RAM y reinicia la conexión de Supabase
-    window.location.reload(); 
-  };
+  // 3. Cálculo de puntos totales de la escuadra
+  const totalEscuadra = Object.values(telemetriaRivales).reduce(
+    (acc: number, r: any): number => acc + (Number(r.score) || 0), 
+    scoreLocal
+  );
 
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/90 backdrop-blur-md select-none p-4">
-      <div className="w-full max-w-2xl border-2 border-zinc-800 bg-[#050505] shadow-[0_0_50px_rgba(6,182,212,0.1)] flex flex-col">
+    <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 select-none font-mono">
+      
+      <div className="w-full max-w-2xl border border-cyan-500/30 bg-black shadow-[0_0_80px_rgba(6,182,212,0.15)] flex flex-col relative">
         
+        {/* Esquinas Decorativas */}
+        <div className="absolute -top-1 -left-1 w-8 h-8 border-t-2 border-l-2 border-cyan-400" />
+        <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-2 border-r-2 border-cyan-400" />
+
         {/* HEADER: Estado de la Misión */}
-        <div className={`p-6 border-b-2 text-center ${esVictoria ? 'border-cyan-500 bg-cyan-950/20' : 'border-red-900 bg-red-950/20'}`}>
-          <h2 className={`font-mono text-4xl font-bold tracking-[0.2em] uppercase drop-shadow-md
-            ${esVictoria ? 'text-cyan-400' : 'text-red-500'}`}>
+        <div className={`p-6 border-b border-cyan-900/50 text-center ${esVictoria ? 'bg-cyan-950/20' : 'bg-red-950/10'}`}>
+          <h2 className={`text-4xl font-bold tracking-[0.2em] uppercase drop-shadow-md ${esVictoria ? 'text-cyan-400' : 'text-red-500'}`}>
             {esVictoria ? 'EXTRACCIÓN EXITOSA' : 'ENLACE PERDIDO'}
           </h2>
-          <p className="font-mono text-[10px] text-zinc-400 tracking-widest mt-2 uppercase">
-            Sync_Clock: 00:00 | Operación Finalizada
-          </p>
+          <div className="flex justify-center gap-6 mt-2">
+            <p className="text-[9px] text-zinc-500 tracking-widest uppercase">Operación: A316_FINAL</p>
+            <p className="text-[9px] text-zinc-500 tracking-widest uppercase">Status: {guardado ? 'SINC_DATA_OK' : 'SINC_DATA_PENDING'}</p>
+          </div>
         </div>
 
-        {/* TABLA DE CLASIFICACIÓN (LEADERBOARD) */}
-        <div className="p-8 flex flex-col gap-3">
-          <div className="flex justify-between text-[9px] font-mono text-zinc-600 uppercase border-b border-zinc-800 pb-2 mb-2 px-2">
-            <span>Rango / Piloto</span>
-            <span>Puntos de Resonancia</span>
+        {/* CONTENIDO: Leaderboard y Totales */}
+        <div className="p-8 space-y-6">
+          
+          {/* Totales Rápidos */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-cyan-950/10 border border-cyan-500/20 p-3 text-center">
+              <span className="text-[8px] text-zinc-500 uppercase block">Mi Resonancia</span>
+              <span className="text-2xl font-bold text-cyan-400 tabular-nums">{scoreLocal.toLocaleString()}</span>
+            </div>
+            <div className="bg-yellow-500/5 border border-yellow-500/20 p-3 text-center">
+              <span className="text-[8px] text-zinc-500 uppercase block">Total Escuadra</span>
+              <span className="text-2xl font-bold text-yellow-500 tabular-nums">{totalEscuadra.toLocaleString()}</span>
+            </div>
           </div>
 
-          {ranking.map((piloto, index) => {
-            const esGanador = index === 0;
-            return (
+          {/* Leaderboard de la Sesión */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-[9px] text-zinc-600 uppercase px-2">
+              <span>Rango / Piloto</span>
+              <span>Puntos</span>
+            </div>
+            {ranking.map((piloto, index) => (
               <div 
                 key={piloto.id}
-                className={`flex justify-between items-center p-3 font-mono border transition-all
-                  ${piloto.esLocal ? 'border-zinc-500 bg-zinc-900/50' : 'border-zinc-800 bg-black/40'}
-                  ${esGanador ? 'border-l-4 border-l-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.1)]' : 'border-l-4 border-l-transparent'}
-                `}
+                className={`flex justify-between items-center p-3 border transition-all ${
+                  piloto.esLocal ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-zinc-900 bg-black/40'
+                } ${index === 0 ? 'border-l-4 border-l-yellow-500' : 'border-l-4 border-l-transparent'}`}
               >
                 <div className="flex items-center gap-4">
-                  <span className={`text-lg font-bold ${esGanador ? 'text-yellow-500' : 'text-zinc-600'}`}>
-                    0{index + 1}
-                  </span>
-                  <div className="flex flex-col">
-                    <span className={`text-sm uppercase tracking-wider font-bold ${piloto.esLocal ? 'text-white' : 'text-zinc-400'}`}>
+                  <span className={`text-lg font-bold ${index === 0 ? 'text-yellow-500' : 'text-zinc-700'}`}>0{index + 1}</span>
+                  <div className="flex flex-col text-left">
+                    <span className={`text-xs font-bold uppercase ${piloto.esLocal ? 'text-white' : 'text-zinc-400'}`}>
                       {piloto.username} {piloto.esLocal && '(TÚ)'}
                     </span>
-                    <span className="text-[8px] text-zinc-500">SLOT_{piloto.slot}</span>
+                    <span className="text-[8px] text-zinc-600">SLOT_0{piloto.slot}</span>
                   </div>
                 </div>
-                
-                <span className={`text-xl font-bold tabular-nums tracking-tighter
-                  ${esGanador ? 'text-yellow-500' : 'text-cyan-500'}`}>
-                  {piloto.finalScore.toLocaleString()} PTS
+                <span className={`text-lg font-bold tabular-nums ${index === 0 ? 'text-yellow-500' : 'text-cyan-600'}`}>
+                  {piloto.finalScore.toLocaleString()}
                 </span>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
 
         {/* FOOTER: Acciones */}
-        <div className="p-6 border-t border-zinc-800 flex justify-center bg-black/40">
+        <div className="p-6 border-t border-cyan-900/50 bg-black/40 text-center">
           <button 
-            onClick={cerrarConexion}
-            className="px-12 py-4 bg-zinc-900 border border-zinc-700 text-white font-mono text-xs tracking-widest uppercase hover:bg-cyan-500 hover:text-black hover:border-cyan-400 transition-all shadow-lg"
+            onClick={() => window.location.reload()}
+            className="w-full py-4 bg-zinc-900 border border-zinc-700 text-white text-xs font-bold tracking-[0.3em] uppercase hover:bg-white hover:text-black transition-all shadow-lg"
           >
-            [ DESCONECTAR Y VOLVER A LA BASE ]
+            [ DESCONECTAR Y VOLVER AL LOBBY ]
           </button>
+          {guardado && (
+            <p className="mt-4 text-[8px] text-green-500 animate-pulse uppercase tracking-widest font-bold">
+              ✓ Telemetría guardada en el Hall of Fame Global
+            </p>
+          )}
         </div>
 
       </div>
