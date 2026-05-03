@@ -42,7 +42,6 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
     e.preventDefault();
     const cleanUsername = username.trim().toUpperCase();
     if (!cleanUsername) return;
-
     setLoading(true);
     setError(null);
 
@@ -68,18 +67,11 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
         updatedJugadores = [{ id: myId, username: cleanUsername, slot: mySlot, listo: false }];
         const { error: createError } = await supabase
           .from('salas')
-          .insert([{ 
-            codigo_sala: finalCode, 
-            jugadores: updatedJugadores, 
-            estado: 'espera' 
-          }]);
+          .insert([{ codigo_sala: finalCode, jugadores: updatedJugadores, estado: 'espera' }]);
         if (createError) throw createError;
       } else {
         const jugadoresActuales = sala.jugadores || [];
-        const pilotoExistente = jugadoresActuales.find(
-          (p: any) => p.username.toUpperCase() === cleanUsername
-        );
-
+        const pilotoExistente = jugadoresActuales.find((p: any) => p.username.toUpperCase() === cleanUsername);
         if (pilotoExistente) {
           myId = pilotoExistente.id;
           mySlot = pilotoExistente.slot;
@@ -87,10 +79,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
           if (jugadoresActuales.length >= 4) throw new Error('SALA_LLENA');
           mySlot = jugadoresActuales.length + 1;
           updatedJugadores = [...jugadoresActuales, { id: myId, username: cleanUsername, slot: mySlot, listo: false }];
-          const { error: updateError } = await supabase
-            .from('salas')
-            .update({ jugadores: updatedJugadores })
-            .eq('codigo_sala', finalCode);
+          const { error: updateError } = await supabase.from('salas').update({ jugadores: updatedJugadores }).eq('codigo_sala', finalCode);
           if (updateError) throw updateError;
         }
       }
@@ -98,7 +87,6 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
       const sessionData = { id: myId, username: cleanUsername, slot: mySlot, roomCode: finalCode };
       localStorage.setItem('A316_SESSION', JSON.stringify(sessionData));
       onAccessGranted(sessionData);
-
     } catch (err: any) {
       setError(err.message === 'SALA_LLENA' ? 'SALA_AL_MÁXIMO_DE_CAPACIDAD' : 'ERROR_DE_ENLACE_RSD_V4');
     } finally {
@@ -107,78 +95,91 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-end pr-10 md:pr-[12%] overflow-hidden bg-black select-none">
+    <div className="fixed inset-0 z-[100] flex items-center justify-end pr-10 md:pr-[10%] overflow-hidden bg-black select-none">
       
-      {/* CAPA DE FONDO: EXCLUSIVO LOBBY */}
+      {/* BACKGROUND LOBBY */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src="/bg.png" 
-          className="w-full h-full object-cover opacity-80" 
-          alt="Lobby Matrix" 
-        />
-        {/* Overlay para suavizar la transición hacia el panel de la derecha */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/60" />
+        <img src="/bg.png" className="w-full h-full object-cover opacity-70" alt="Lobby Matrix" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/80" />
       </div>
 
-      {/* PANEL DE IDENTIFICACIÓN (A LA DERECHA) */}
-      <div className="relative z-20 w-full max-w-[380px] border border-cyan-500/30 bg-black/80 backdrop-blur-xl p-10 shadow-[0_0_80px_rgba(0,0,0,0.9)] rounded-sm">
+      {/* PANEL DE IDENTIFICACIÓN (MARCO TÉCNICO) */}
+      <div className="relative z-20 w-full max-w-[450px] p-1 bg-cyan-900/10 backdrop-blur-xl border border-cyan-500/20 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
         
-        <div className="mb-10 text-center border-b border-zinc-800 pb-8">
-          <h2 className="font-mono text-2xl font-bold tracking-tighter text-cyan-400 drop-shadow-[0_0_15px_rgba(6,182,212,0.4)] uppercase">
-            Identificación de Piloto
-          </h2>
-          <p className="font-mono text-[10px] text-zinc-500 mt-2 tracking-[0.3em] uppercase">
-            Sistema de Acceso Público A316
-          </p>
-        </div>
+        {/* Esquinas Decorativas Estilo Sci-Fi */}
+        <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-cyan-400 shadow-[0_0_10px_#22d3ee]" />
+        <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-cyan-400 shadow-[0_0_10px_#22d3ee]" />
+        <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-cyan-400 shadow-[0_0_10px_#22d3ee]" />
+        <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-cyan-400 shadow-[0_0_10px_#22d3ee]" />
 
-        <form onSubmit={handleAccess} className="space-y-8">
-          <div className="space-y-2">
-            <label className="block font-mono text-[10px] text-zinc-600 uppercase tracking-widest">User_ID</label>
-            <input
-              required
-              autoFocus
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-zinc-950/90 border border-zinc-800 p-4 font-mono text-sm text-cyan-400 focus:outline-none focus:border-cyan-500/50 transition-all uppercase placeholder:text-zinc-800"
-              placeholder="ESCRIBE TU ALIAS..."
-              maxLength={12}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block font-mono text-[10px] text-zinc-600 uppercase tracking-widest">Link_Code (Opcional)</label>
-            <input
-              type="text"
-              value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value)}
-              className="w-full bg-zinc-950/90 border border-zinc-800 p-4 font-mono text-sm text-white focus:outline-none focus:border-zinc-700 transition-all uppercase placeholder:text-zinc-800"
-              placeholder="CÓDIGO PARA UNIRSE..."
-              maxLength={6}
-            />
-          </div>
-
-          {error && (
-            <div className="py-3 bg-red-950/20 border border-red-900/50">
-              <p className="font-mono text-[11px] text-red-500 text-center uppercase tracking-tighter animate-pulse"> 
-                {">"} {error} 
-              </p>
+        <div className="relative border border-cyan-500/30 p-10 bg-black/60">
+          
+          <div className="mb-10 text-center">
+            <h2 className="font-mono text-[22px] font-bold tracking-[0.1em] text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)] uppercase whitespace-nowrap">
+              Identificación de Piloto
+            </h2>
+            <p className="font-mono text-[9px] text-zinc-500 mt-2 tracking-[0.2em] uppercase">
+              Sistema de Acceso Público A316
+            </p>
+            
+            {/* Divisor con flecha central */}
+            <div className="relative mt-6 flex items-center justify-center">
+              <div className="w-full h-[1px] bg-zinc-800" />
+              <div className="absolute bg-cyan-500 w-2 h-2 rotate-45 border border-black shadow-[0_0_5px_#22d3ee]" />
             </div>
-          )}
+          </div>
 
-          <button
-            disabled={loading || !username}
-            className="w-full py-5 bg-zinc-900/40 border border-zinc-700 text-cyan-500 font-mono text-xs font-bold uppercase hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-10 shadow-[0_0_20px_rgba(6,182,212,0.1)] hover:shadow-[0_0_40px_rgba(6,182,212,0.3)]"
-          >
-            {loading ? 'ESTABLECIENDO ENLACE...' : roomCode ? 'VINCULAR A ESCUADRA' : 'INICIAR NUEVA MATRIZ'}
-          </button>
-        </form>
+          <form onSubmit={handleAccess} className="space-y-8">
+            <div className="space-y-3">
+              <label className="block font-mono text-[10px] text-zinc-500 uppercase tracking-widest ml-1">User_ID</label>
+              <input
+                required
+                autoFocus
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full bg-black/40 border border-cyan-900/50 p-4 font-mono text-sm text-cyan-400 focus:outline-none focus:border-cyan-400/60 transition-all uppercase placeholder:text-zinc-800 shadow-inner"
+                placeholder="ESCRIBE TU ALIAS..."
+                maxLength={12}
+              />
+            </div>
 
-        <div className="mt-10 flex justify-center gap-6 opacity-20">
-          <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-ping" />
-          <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-ping [animation-delay:0.3s]" />
-          <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-ping [animation-delay:0.6s]" />
+            <div className="space-y-3">
+              <label className="block font-mono text-[10px] text-zinc-500 uppercase tracking-widest ml-1">Link_Code (Opcional)</label>
+              <input
+                type="text"
+                value={roomCode}
+                onChange={(e) => setRoomCode(e.target.value)}
+                className="w-full bg-black/40 border border-cyan-900/50 p-4 font-mono text-sm text-zinc-300 focus:outline-none focus:border-cyan-400/60 transition-all uppercase placeholder:text-zinc-800 shadow-inner"
+                placeholder="CÓDIGO PARA UNIRSE..."
+                maxLength={6}
+              />
+            </div>
+
+            {error && (
+              <div className="py-2 border-l-2 border-red-500 bg-red-500/10">
+                <p className="font-mono text-[10px] text-red-500 pl-3 uppercase tracking-tighter"> 
+                  {">"} {error} 
+                </p>
+              </div>
+            )}
+
+            <button
+              disabled={loading || !username}
+              className="w-full py-5 bg-cyan-900/10 border border-cyan-500/40 text-cyan-400 font-mono text-xs font-bold uppercase hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-10 shadow-[0_0_15px_rgba(6,182,212,0.1)] group relative overflow-hidden"
+            >
+              <span className="relative z-10">
+                {loading ? 'SINC_ENLACE...' : roomCode ? 'VINCULAR A ESCUADRA' : 'INICIAR NUEVA MATRIZ'}
+              </span>
+              <div className="absolute inset-0 bg-cyan-400 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+            </button>
+          </form>
+
+          {/* Decoración Inferior (Círculo) */}
+          <div className="mt-10 flex flex-col items-center gap-2 opacity-50">
+            <div className="w-2 h-2 rounded-full border border-cyan-400 animate-pulse shadow-[0_0_5px_#22d3ee]" />
+            <div className="w-[1px] h-4 bg-gradient-to-b from-cyan-400 to-transparent" />
+          </div>
         </div>
       </div>
     </div>
