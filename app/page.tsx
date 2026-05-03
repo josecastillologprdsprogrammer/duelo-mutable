@@ -103,7 +103,13 @@ export default function Home() {
   return (
     <main className="relative h-screen w-screen bg-[#050505] overflow-hidden select-none font-mono">
       
-      {/* CAPA 0: EL BACKGROUND (Consola A316) */}
+      {/* CSS PARA OCULTAR SCROLLBARS */}
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
+
+      {/* CAPA 0: EL BACKGROUND */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
           src="/bg.png" 
@@ -113,7 +119,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-radial-gradient from-transparent to-black/60 pointer-events-none" />
       </div>
 
-      {/* CAPA 10: INTERFAZ CALIBRADA */}
+      {/* CAPA 10: INTERFAZ */}
       <div className="relative z-10 w-full h-full">
         
         {/* MODAL DE RESULTADOS */}
@@ -124,15 +130,21 @@ export default function Home() {
         {/* --- [A] BLOQUE DE SALA (TOP LEFT) --- */}
         <div className="absolute top-10 left-10 flex flex-col gap-3">
           <div className="flex items-end gap-4">
-            <div className="flex items-center gap-2 group cursor-pointer" onClick={copiarCodigo} title="Copiar código de sala">
+            <div 
+              className="flex items-center gap-3 group cursor-pointer" 
+              onClick={copiarCodigo}
+            >
+              {/* Icono de Copiar a la IZQUIERDA */}
+              <div className={`p-1.5 border border-zinc-800 rounded-sm transition-all ${copiado ? 'bg-green-500/20 border-green-500' : 'bg-black/40 group-hover:border-cyan-500'}`}>
+                <svg className={`w-4 h-4 ${copiado ? 'text-green-500' : 'text-zinc-500 group-hover:text-cyan-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="C8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+              </div>
               <h1 className="text-3xl font-bold tracking-tighter text-white uppercase drop-shadow-md">
                 SALA_{userSession.roomCode}
               </h1>
-              <svg className={`w-4 h-4 transition-colors ${copiado ? 'text-green-500' : 'text-zinc-600 group-hover:text-cyan-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002-2h2a2 2 0 002-2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-              </svg>
             </div>
-            <button onClick={abortarEnlace} className="text-[9px] text-zinc-500 hover:text-red-500 border border-zinc-800 px-3 py-1 rounded-sm uppercase transition-all bg-black/20 hover:bg-red-500/10">
+            <button onClick={abortarEnlace} className="text-[9px] text-zinc-500 hover:text-red-500 border border-zinc-800 px-3 py-1 rounded-sm uppercase transition-all bg-black/20">
               [ ABORTAR_ENLACE ]
             </button>
           </div>
@@ -160,7 +172,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* --- [B] BLOQUE DE TIEMPO (TOP CENTER) --- */}
+        {/* --- [B] BLOQUE DE TIEMPO --- */}
         <div className="absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
           <span className="text-[10px] text-zinc-500 uppercase tracking-[0.5em] mb-1">Sync_Clock</span>
           <p className={`text-6xl font-bold font-mono leading-none drop-shadow-2xl ${tiempo <= 30 ? 'text-red-500 animate-pulse' : 'text-zinc-200'}`}>
@@ -196,7 +208,7 @@ export default function Home() {
           ))}
         </div>
 
-        {/* --- [E] BOTÓN DE ACCIÓN (BOTTOM CENTER) --- */}
+        {/* --- [E] BOTÓN DE ACCIÓN --- */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2">
           {estadoPartida === 'espera' ? (
             <button onClick={marcarListo} disabled={yoEstoyListo} className={`px-20 py-4 border-2 text-[12px] font-bold tracking-[0.4em] uppercase transition-all shadow-[0_0_30px_rgba(0,0,0,0.5)] ${yoEstoyListo ? 'border-green-900 text-green-700 bg-green-950/20' : 'border-cyan-500 text-cyan-500 hover:bg-cyan-500 hover:text-black shadow-[0_0_30px_rgba(6,182,212,0.2)]'}`}>
@@ -211,23 +223,35 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- [F] TELEMETRÍA (FAR RIGHT) --- */}
-        <div className="absolute right-6 top-[10%] bottom-[10%] w-[22%] flex flex-col gap-5">
+        {/* --- [F] TELEMETRÍA (FAR RIGHT) - AJUSTADA PARA VER LOS 3 --- */}
+        <div className="absolute right-6 top-[10%] bottom-[8%] w-[22%] flex flex-col gap-4">
           <div className="flex justify-between items-center border-b border-zinc-900 pb-2 px-1">
             <h2 className="text-[11px] text-zinc-500 uppercase tracking-widest font-bold">Escuadra</h2>
             <span className="text-[11px] text-cyan-500 font-bold tabular-nums">{scoreEscuadra.toLocaleString()} PTS</span>
           </div>
-          <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
+          {/* Contenedor sin scroll visible y con gaps ajustados */}
+          <div className="flex-1 flex flex-col gap-4 overflow-y-auto no-scrollbar pr-1">
             {slotsOponentes.map((slotId) => {
               const datosRival = telemetriaRivales[slotId];
               const infoJugador = jugadores.find(j => j.slot === slotId);
               return (
-                <div key={slotId} className="bg-zinc-950/30 border border-zinc-900/50 p-2 rounded-sm shadow-inner">
-                  <div className="flex justify-between items-center mb-2 px-1">
+                <div key={slotId} className="bg-zinc-950/30 border border-zinc-900/50 p-2 rounded-sm shadow-inner flex flex-col items-center">
+                  <div className="w-full flex justify-between items-center mb-1.5 px-1">
                     <span className="text-[9px] text-zinc-400 uppercase font-bold">{infoJugador?.username || `SLOT_0${slotId}`}</span>
-                    <span className="text-[10px] text-yellow-500 font-bold">{(datosRival?.score || 0).toLocaleString()}</span>
+                    <span className="text-[10px] text-yellow-500 font-bold tabular-nums">{(datosRival?.score || 0).toLocaleString()}</span>
                   </div>
-                  <OrbitalPanel idJugador={infoJugador?.username || `SLOT_0${slotId}`} size={165} esLocal={false} motor={{ ...motor, score: datosRival?.score || 0, skillsActivas: datosRival?.skills || {}, seleccionadosRef: { current: motor.nodosRef.current.filter(n => datosRival?.nodos?.includes(n.id)) } }} />
+                  {/* Tamaño de mini-radar ajustado a 150 para garantizar que quepan los 3 en la mayoría de resoluciones */}
+                  <OrbitalPanel 
+                    idJugador={infoJugador?.username || `SLOT_0${slotId}`} 
+                    size={150} 
+                    esLocal={false} 
+                    motor={{ 
+                      ...motor, 
+                      score: datosRival?.score || 0, 
+                      skillsActivas: datosRival?.skills || {}, 
+                      seleccionadosRef: { current: motor.nodosRef.current.filter(n => datosRival?.nodos?.includes(n.id)) } 
+                    }} 
+                  />
                 </div>
               );
             })}
