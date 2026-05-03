@@ -70,7 +70,8 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
       if (!sala) {
         // CASO A: CREAR NUEVA MATRIZ (SALA)
         mySlot = 1;
-        updatedJugadores = [{ id: myId, username: cleanUsername, slot: mySlot, listo: true }];
+        // CORRECCIÓN ARQUITECTÓNICA: Estado pasivo por defecto
+        updatedJugadores = [{ id: myId, username: cleanUsername, slot: mySlot, listo: false }];
         
         const { error: createError } = await supabase
           .from('salas')
@@ -100,7 +101,8 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
           }
           
           mySlot = jugadoresActuales.length + 1;
-          updatedJugadores = [...jugadoresActuales, { id: myId, username: cleanUsername, slot: mySlot, listo: true }];
+          // CORRECCIÓN ARQUITECTÓNICA: Estado pasivo por defecto
+          updatedJugadores = [...jugadoresActuales, { id: myId, username: cleanUsername, slot: mySlot, listo: false }];
 
           const { error: updateError } = await supabase
             .from('salas')

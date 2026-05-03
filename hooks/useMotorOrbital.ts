@@ -1,3 +1,4 @@
+// hooks/useMotorOrbital.ts
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
@@ -266,8 +267,19 @@ export const useMotorOrbital = (userSession: any) => {
     return () => { canal.unsubscribe(); canalDB.unsubscribe(); };
   }, [userSession]);
 
+  // CORRECCIÓN ARQUITECTÓNICA: Validación estricta de 4 nodos
   useEffect(() => {
-    if (jugadores.length > 0 && jugadores.every(p => p.listo) && estadoPartida === 'espera') {
+    // 1. Verificamos que existan datos
+    if (jugadores.length === 0) return;
+    
+    // 2. Condición de capacidad: Exactamente 4 jugadores en la sala
+    const escuadraCompleta = jugadores.length === 4;
+    
+    // 3. Condición de estado: Todos los presentes están listos
+    const todosListos = jugadores.every(p => p.listo === true);
+
+    // 4. Si se cumplen las condiciones y la partida está en espera, iniciamos.
+    if (escuadraCompleta && todosListos && estadoPartida === 'espera') {
       setEstadoPartida('cuenta_atras');
       setCountdown(10);
     }
