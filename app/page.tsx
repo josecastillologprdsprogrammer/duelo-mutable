@@ -145,7 +145,7 @@ export default function Home() {
               </h1>
             </div>
             <button onClick={abortarEnlace} className="text-[9px] text-zinc-500 hover:text-red-500 border border-zinc-800 px-3 py-1 rounded-sm uppercase transition-all bg-black/20">
-              [ ABORTAR_ENLACE ]
+              [ Salir de la Sala ]
             </button>
           </div>
           
@@ -156,25 +156,25 @@ export default function Home() {
                 <div key={s} className={`w-2 h-2 rounded-full ${p ? (p.listo ? 'bg-green-500 shadow-[0_0_5px_green]' : 'bg-yellow-500 animate-pulse') : 'bg-zinc-900'}`} />
               );
             })}
-            <span className="text-[8px] text-zinc-600 uppercase ml-2 tracking-widest font-bold">Net_Status</span>
+            <span className="text-[8px] text-zinc-600 uppercase ml-2 tracking-widest font-bold">Jugadores Conectados</span>
           </div>
 
           <div className="flex flex-col gap-1.5 mt-1">
             <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold text-yellow-500 uppercase min-w-[75px]">EMS: {Math.floor(energia)}U</span>
+              <span className="text-[10px] font-bold text-yellow-500 uppercase min-w-[75px]">Energia Acumulada: {Math.floor(energia)}U</span>
               <div className="w-48 h-1.5 bg-zinc-900 border border-zinc-800 rounded-full overflow-hidden">
                 <div className="h-full bg-yellow-500 shadow-[0_0_10px_#eab308] transition-all duration-300" style={{ width: `${(energia / 3000) * 100}%` }} />
               </div>
             </div>
             <p className="text-[11px] text-cyan-500 uppercase tracking-[0.2em] font-bold">
-              Piloto: {userSession.username} | Slot_ID: {userSession.slot}
+              Nick del Jugador: {userSession.username} | Posicionamiento en la Partida: {userSession.slot}
             </p>
           </div>
         </div>
 
         {/* --- [B] BLOQUE DE TIEMPO --- */}
         <div className="absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-[0.5em] mb-1">Sync_Clock</span>
+          <span className="text-[10px] text-zinc-500 uppercase tracking-[0.5em] mb-1">Temporizador</span>
           <p className={`text-6xl font-bold font-mono leading-none drop-shadow-2xl ${tiempo <= 30 ? 'text-red-500 animate-pulse' : 'text-zinc-200'}`}>
             {formatearTiempo(tiempo)}
           </p>
@@ -195,14 +195,14 @@ export default function Home() {
 
         {/* --- [D] COLUMNAS DE SKILLS --- */}
         <div className="absolute left-[12%] top-[55%] -translate-y-1/2 flex flex-col gap-4 items-center">
-          <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-[0.3em] mb-2">Sistemas</span>
+          <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-[0.3em] mb-2">Mejoras</span>
           {SKILLS_CATALOGO.filter(s => s.tipo === 'buff').map(skill => (
             <SkillSlot key={skill.id} skill={skill} desbloqueada={skillsDesbloqueadas.includes(skill.id)} activa={skillsActivas[skill.id]} esNueva={ultimaSkillRecibida === skill.id} energia={energia} onActivar={activarSkillManualmente} />
           ))}
         </div>
 
         <div className="absolute right-[28%] top-[55%] -translate-y-1/2 flex flex-col gap-4 items-center">
-          <span className="text-[10px] font-bold text-red-500 uppercase tracking-[0.3em] mb-2">Armamento</span>
+          <span className="text-[10px] font-bold text-red-500 uppercase tracking-[0.3em] mb-2">Ataques</span>
           {SKILLS_CATALOGO.filter(s => s.tipo === 'debuff').map(skill => (
             <SkillSlot key={skill.id} skill={skill} desbloqueada={skillsDesbloqueadas.includes(skill.id)} activa={skillsActivas[skill.id]} esNueva={ultimaSkillRecibida === skill.id} energia={energia} onActivar={activarSkillManualmente} />
           ))}
@@ -226,7 +226,7 @@ export default function Home() {
         {/* --- [F] TELEMETRÍA (FAR RIGHT) - AJUSTADA PARA VER LOS 3 --- */}
         <div className="absolute right-6 top-[10%] bottom-[8%] w-[22%] flex flex-col gap-4">
           <div className="flex justify-between items-center border-b border-zinc-900 pb-2 px-1">
-            <h2 className="text-[11px] text-zinc-500 uppercase tracking-widest font-bold">Escuadra</h2>
+            <h2 className="text-[11px] text-zinc-500 uppercase tracking-widest font-bold">Puntos Totales del Lobby</h2>
             <span className="text-[11px] text-cyan-500 font-bold tabular-nums">{scoreEscuadra.toLocaleString()} PTS</span>
           </div>
           {/* Contenedor sin scroll visible y con gaps ajustados */}

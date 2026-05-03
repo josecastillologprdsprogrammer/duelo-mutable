@@ -144,7 +144,7 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
         <div className="flex items-center gap-2">
           <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${esLocal ? 'bg-yellow-500' : 'bg-red-500'}`} />
           <span className={`text-[10px] uppercase font-bold tracking-tighter ${esLocal ? 'text-zinc-200' : 'text-zinc-400'}`}>
-            {esLocal ? 'SYSTEM_LOCAL' : idJugador}
+            {esLocal ? 'Puntaje Total' : idJugador}
           </span>
         </div>
         <span className={`text-[10px] font-bold tabular-nums ${esLocal ? 'text-cyan-500' : 'text-zinc-500'}`}>
