@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 1. Declaracrgb(2, 1, 1)iva de oscuridad. Le dice al navegador: "Ya soy oscuro, no me alteres" */
+  color-scheme: dark;
+  
+  /* 2. Variables base ancladas estrictamente a tu paleta oscura */
+  --background: #050505;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -12,11 +16,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  /* 3. Escudo de fuerza bruta contra motores basados en Chromium como Opera GX */
+  background-color: #050505 !important;
 }
 
 body {
