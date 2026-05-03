@@ -9,7 +9,6 @@ import ResultsModal from './components/ResultsModal';
 
 /**
  * COMPONENTE: SLOT DE HABILIDAD
- * Integración de assets gráficos y feedback de estado.
  */
 function SkillSlot({ skill, desbloqueada, activa, esNueva, energia, onActivar }: any) {
   const puedePagar = energia >= skill.costo;
@@ -64,7 +63,7 @@ export default function Home() {
 
   const { 
     estadoPartida, tiempo, energia, score, alerta,
-    skillsDesbloqueadas, skillsActivas, debuffsEnemigos, efectosLocales, ultimaSkillRecibida,
+    skillsDesbloqueadas, skillsActivas, efectosLocales, ultimaSkillRecibida,
     jugadores, countdown, telemetriaRivales, marcarListo, activarSkillManualmente
   } = motor;
 
@@ -107,106 +106,130 @@ export default function Home() {
         <div className="absolute inset-0 bg-radial-gradient from-transparent to-black/60 pointer-events-none" />
       </div>
 
-      {/* CAPA 10: HUD POSICIONADO ABSOLUTAMENTE */}
+      {/* CAPA 10: HUD POSICIONADO ABSOLUTAMENTE SEGÚN REFERENCIA */}
       <div className="relative z-10 w-full h-full">
         
-        {/* ⚡ MODAL DE RESULTADOS */}
+        {/* MODAL DE RESULTADOS */}
         {estadoPartida === 'terminado' && (
           <ResultsModal scoreLocal={score} telemetriaRivales={telemetriaRivales} jugadores={jugadores} userSession={userSession} />
         )}
 
-        {/* 1. SECCIÓN CENTRAL: NÚCLEO ORBITAL (Ajustado al centro del círculo del BG) */}
-        <div className="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+        {/* --- [A] TOP LEFT: INFORMACIÓN DE SALA Y PILOTO --- */}
+        <div className="absolute top-10 left-10 flex flex-col gap-2">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold tracking-tighter text-white uppercase drop-shadow-md">
+              SALA_{userSession.roomCode}
+            </h1>
+            <button onClick={abortarEnlace} className="text-[9px] text-zinc-600 hover:text-red-500 border border-zinc-800 px-2 py-0.5 rounded-sm uppercase transition-colors">
+              [ ABORTAR_ENLACE ]
+            </button>
+          </div>
           
-          <div className="mb-4 flex flex-col items-center text-center">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold tracking-[0.2em] text-white uppercase font-mono drop-shadow-md">
-                SALA_{userSession.roomCode}
-              </h1>
-              <button onClick={abortarEnlace} className="text-[8px] font-mono text-zinc-600 hover:text-red-500 transition-colors uppercase border border-zinc-800 px-2 py-0.5 rounded-sm">
-                [ ABORTAR_ENLACE ]
-              </button>
-            </div>
-            
-            <div className="flex gap-1.5 mt-2">
-              {SLOTS_TOTALES.map(s => {
-                const p = jugadores.find(j => j.slot === s);
-                return (
-                  <div key={s} className={`w-1.5 h-1.5 rounded-full ${p ? (p.listo ? 'bg-green-500 shadow-[0_0_5px_green]' : 'bg-yellow-500 animate-pulse') : 'bg-zinc-900'}`} />
-                );
-              })}
-              <span className="text-[7px] text-zinc-600 uppercase ml-2 leading-none">Net_Status</span>
-            </div>
-
-            <p className={`text-4xl font-mono font-bold mt-2 leading-none drop-shadow-lg ${tiempo <= 30 ? 'text-red-500 animate-pulse' : 'text-zinc-300'}`}>
-              {formatearTiempo(tiempo)}
-            </p>
+          <div className="flex gap-1.5 items-center">
+            {SLOTS_TOTALES.map(s => {
+              const p = jugadores.find(j => j.slot === s);
+              return (
+                <div key={s} className={`w-2 h-2 rounded-full ${p ? (p.listo ? 'bg-green-500 shadow-[0_0_5px_green]' : 'bg-yellow-500 animate-pulse') : 'bg-zinc-900'}`} />
+              );
+            })}
+            <span className="text-[8px] text-zinc-500 uppercase ml-2">Net_Status</span>
           </div>
 
+          <div className="mt-2 flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <div className="w-32 h-1 bg-zinc-900 border border-zinc-800 overflow-hidden">
+                <div className="h-full bg-yellow-500 shadow-[0_0_8px_#eab308] transition-all" style={{ width: `${(energia / 3000) * 100}%` }} />
+              </div>
+              <span className="text-[9px] font-bold text-yellow-500 uppercase">EMS: {Math.floor(energia)}u</span>
+            </div>
+            <p className="text-[10px] text-cyan-500 uppercase tracking-widest font-bold">
+              Piloto: {userSession.username} | Slot_ID: {userSession.slot}
+            </p>
+          </div>
+        </div>
+
+        {/* --- [B] TOP CENTER: RELOJ DE SINCRONIZACIÓN --- */}
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
+          <span className="text-[9px] text-zinc-500 uppercase tracking-[0.4em] mb-1">Sync_Clock</span>
+          <p className={`text-5xl font-bold font-mono leading-none drop-shadow-lg ${tiempo <= 30 ? 'text-red-500 animate-pulse' : 'text-zinc-200'}`}>
+            {formatearTiempo(tiempo)}
+          </p>
+          <div className="mt-2 text-[10px] font-bold text-cyan-500">
+            {score.toLocaleString()} PTS
+          </div>
+        </div>
+
+        {/* --- [C] CENTER: NÚCLEO ORBITAL (RADAR) --- */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
           <OrbitalPanel 
             idJugador={userSession.username} 
             esLocal={true} 
             size={560} 
             motor={{ ...motor, skillsActivas: efectosLocales }} 
           />
-
-          <div className="mt-6 h-16 flex flex-col items-center">
-            {estadoPartida === 'espera' ? (
-              <button onClick={marcarListo} disabled={yoEstoyListo} className={`px-10 py-3 border text-[10px] tracking-widest uppercase transition-all ${yoEstoyListo ? 'border-green-900 text-green-700 cursor-wait bg-green-950/10' : 'border-cyan-500 text-cyan-500 hover:bg-cyan-500/10'}`}>
-                {yoEstoyListo ? 'Sincronizando Escuadra...' : 'Establecer Enlace (LISTO)'}
-              </button>
-            ) : (
-              <div className="flex flex-col items-center gap-1">
-                 <p className={`text-[11px] font-bold tracking-tighter uppercase drop-shadow-md ${alerta?.includes("ERROR") ? 'text-red-500 animate-pulse' : 'text-cyan-400'}`}>
-                  {alerta || `> PROCESANDO_RESONANCIA: ${score} PTS`}
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="w-32 h-0.5 bg-zinc-900 border border-zinc-800">
-                    <div className="h-full bg-yellow-500 shadow-[0_0_8px_#eab308]" style={{ width: `${(energia / 3000) * 100}%` }} />
-                  </div>
-                  <span className="text-[8px] font-bold text-yellow-500 uppercase">{Math.floor(energia)}u</span>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* 2. LATERAL IZQUIERDO: SISTEMAS (BUFFS) */}
-        <div className="absolute left-[12%] top-1/2 -translate-y-1/2 flex flex-col gap-4 items-center">
-          <span className="text-[9px] font-bold text-cyan-500 uppercase tracking-[0.3em] mb-2 opacity-50">Sistemas</span>
+        {/* --- [D] LEFT COLUMN: SISTEMAS (BUFFS) --- */}
+        <div className="absolute left-[12%] top-[55%] -translate-y-1/2 flex flex-col gap-4 items-center">
+          <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-[0.3em] mb-2 opacity-60">Sistemas</span>
           {SKILLS_CATALOGO.filter(s => s.tipo === 'buff').map(skill => (
             <SkillSlot key={skill.id} skill={skill} desbloqueada={skillsDesbloqueadas.includes(skill.id)} activa={skillsActivas[skill.id]} esNueva={ultimaSkillRecibida === skill.id} energia={energia} onActivar={activarSkillManualmente} />
           ))}
         </div>
 
-        {/* 3. LATERAL DERECHO: ARMAMENTO (DEBUFFS) */}
-        <div className="absolute right-[28%] top-1/2 -translate-y-1/2 flex flex-col gap-4 items-center">
-          <span className="text-[9px] font-bold text-red-500 uppercase tracking-[0.3em] mb-2 opacity-50">Armamento</span>
+        {/* --- [E] RIGHT COLUMN: ARMAMENTO (DEBUFFS) --- */}
+        <div className="absolute right-[28%] top-[55%] -translate-y-1/2 flex flex-col gap-4 items-center">
+          <span className="text-[10px] font-bold text-red-500 uppercase tracking-[0.3em] mb-2 opacity-60">Armamento</span>
           {SKILLS_CATALOGO.filter(s => s.tipo === 'debuff').map(skill => (
             <SkillSlot key={skill.id} skill={skill} desbloqueada={skillsDesbloqueadas.includes(skill.id)} activa={skillsActivas[skill.id]} esNueva={ultimaSkillRecibida === skill.id} energia={energia} onActivar={activarSkillManualmente} />
           ))}
         </div>
 
-        {/* 4. TELEMETRÍA REMOTA (Columna derecha) */}
-        <div className="absolute right-[2%] top-[10%] bottom-[10%] w-[22%] border-l border-zinc-900/30 pl-4 flex flex-col gap-4 bg-black/10">
+        {/* --- [F] BOTTOM CENTER: ACCIÓN PRINCIPAL --- */}
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
+          {estadoPartida === 'espera' ? (
+            <button onClick={marcarListo} disabled={yoEstoyListo} className={`px-16 py-4 border-2 text-[11px] font-bold tracking-[0.2em] uppercase transition-all shadow-lg ${yoEstoyListo ? 'border-green-900 text-green-700 bg-green-950/20' : 'border-cyan-500 text-cyan-500 hover:bg-cyan-500 hover:text-black shadow-[0_0_25px_rgba(6,182,212,0.3)]'}`}>
+              {yoEstoyListo ? 'Confirmado: Esperando Escuadra...' : 'Establecer Enlace (LISTO)'}
+            </button>
+          ) : (
+            <div className="bg-black/40 px-6 py-2 border border-cyan-500/30 backdrop-blur-sm">
+              <p className={`text-[12px] font-bold uppercase tracking-widest ${alerta?.includes("ERROR") ? 'text-red-500 animate-pulse' : 'text-cyan-400'}`}>
+                {alerta || `> PROCESANDO_RESONANCIA_ESTABLE`}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* --- [G] BOTTOM LEFT: PROTOCOLO / METADATA --- */}
+        <div className="absolute bottom-10 left-10 opacity-40">
+           <p className="text-[9px] text-zinc-500 uppercase leading-tight font-mono">
+             Protocol: Resonancia_A316<br/>
+             Status: {estadoPartida === 'jugando' ? 'Enlace_Activo' : 'Sincronizando'}<br/>
+             Net_Buffer: Optimizando_Broadcast<br/>
+             Pilot: {userSession.username}
+           </p>
+        </div>
+
+        {/* --- [H] FAR RIGHT: TELEMETRÍA ESCUADRA --- */}
+        <div className="absolute right-6 top-[10%] bottom-[10%] w-[22%] flex flex-col gap-4">
           <div className="flex justify-between items-center border-b border-zinc-900 pb-2 px-1">
-            <h2 className="text-[10px] text-zinc-600 uppercase tracking-widest">Escuadra</h2>
-            <span className="text-[10px] text-cyan-500 font-bold tabular-nums">{scoreEscuadra} PTS</span>
+            <h2 className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Telemetría_Escuadra</h2>
+            <span className="text-[10px] text-cyan-500 font-bold tabular-nums">{scoreEscuadra.toLocaleString()} PTS</span>
           </div>
           
-          <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex-1 flex flex-col gap-5 overflow-y-auto pr-2 custom-scrollbar">
             {slotsOponentes.map((slotId) => {
               const datosRival = telemetriaRivales[slotId];
               const infoJugador = jugadores.find(j => j.slot === slotId);
               return (
-                <div key={slotId} className="bg-zinc-950/30 border border-zinc-900/50 p-2 rounded-sm shadow-inner">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[8px] text-zinc-500 uppercase">{infoJugador?.username || `SLOT_0${slotId}`}</span>
-                    <span className="text-[8px] text-yellow-500 font-bold tabular-nums">{datosRival?.score || 0}</span>
+                <div key={slotId} className="bg-zinc-950/30 border border-zinc-900/50 p-2 rounded-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[9px] text-zinc-400 uppercase font-bold">{infoJugador?.username || `SLOT_0${slotId}`}</span>
+                    <span className="text-[9px] text-yellow-600 font-bold">{(datosRival?.score || 0).toLocaleString()} PTS</span>
                   </div>
                   <OrbitalPanel 
                     idJugador={infoJugador?.username || `SLOT_0${slotId}`} 
-                    size={160} 
+                    size={165} 
                     esLocal={false} 
                     motor={{ 
                       ...motor, 
@@ -219,38 +242,16 @@ export default function Home() {
               );
             })}
           </div>
-
-          <div className="p-3 bg-zinc-900/10 border border-zinc-900/50 rounded-sm">
-             <p className="text-[8px] text-zinc-700 uppercase leading-tight font-mono">
-               Protocol: Resonancia_A316<br/>
-               Status: {estadoPartida === 'jugando' ? 'ENLACE_ACTIVO' : 'SINCRONIZANDO'}<br/>
-               Pilot: {userSession.username}
-             </p>
-          </div>
         </div>
-
       </div>
 
-      {/* OVERLAYS GLOBALES */}
+      {/* OVERLAY DE CUENTA ATRÁS */}
       {estadoPartida === 'cuenta_atras' && (
-        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/80 backdrop-blur-3xl">
-          <span className="font-mono text-[160px] font-bold text-white animate-pulse">{countdown}</span>
-          <p className="font-mono text-cyan-500 tracking-[1.5em] uppercase text-xs mt-4">Sincronizando Enlace</p>
-        </div>
-      )}
-
-      {mostrarInstrucciones && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={() => setMostrarInstrucciones(false)}>
-          <div className="bg-[#050505] border border-zinc-800 max-w-lg w-full p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h2 className="text-cyan-500 uppercase tracking-widest font-bold mb-4 border-b border-zinc-800 pb-2">Manual de Operación</h2>
-            <div className="space-y-4 text-[11px] text-zinc-400 font-mono">
-              <p className="flex justify-between"><span>[1-5]</span> <span className="text-zinc-200">Activar Buffs</span></p>
-              <p className="flex justify-between"><span>[Q-T]</span> <span className="text-zinc-200">Protocolos Debuff</span></p>
-              <p className="flex justify-between"><span>[CLIC]</span> <span className="text-zinc-200">Capturar Nodos</span></p>
-              <p className="flex justify-between"><span>[ESPACIO]</span> <span className="text-zinc-200">Validar Geometría</span></p>
-            </div>
-            <button className="mt-8 w-full py-2 border border-zinc-800 hover:bg-zinc-900 text-[10px] text-zinc-500 uppercase">Cerrar_Manual</button>
-          </div>
+        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/85 backdrop-blur-3xl">
+          <span className="font-mono text-[180px] font-bold text-white animate-pulse drop-shadow-[0_0_50px_rgba(255,255,255,0.2)]">
+            {countdown}
+          </span>
+          <p className="font-mono text-cyan-500 tracking-[1.5em] uppercase text-sm mt-4">Sincronizando Enlace Escuadra</p>
         </div>
       )}
     </main>
