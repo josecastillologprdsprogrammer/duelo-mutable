@@ -233,6 +233,10 @@ export const useMotorOrbital = (userSession: any) => {
   // --- 9. LIFECYCLE DE SALA Y CONEXIÓN ---
   const resetearMotorLocal = useCallback(() => {
     setEstadoPartida('espera');
+    
+    // CRÍTICO: Forzar localmente a todos a "listo: false" para evitar auto-arranque
+    setJugadores(prev => prev.map(p => ({ ...p, listo: false }))); 
+    
     setTiempo(TIEMPO_PARTIDA);
     setScore(0);
     setEnergia(3000);
@@ -272,26 +276,24 @@ export const useMotorOrbital = (userSession: any) => {
     return () => { canal.unsubscribe(); canalDB.unsubscribe(); };
   }, [userSession, resetearMotorLocal]);
 
-  // === INTERVENCIÓN APLICADA AQUÍ ===
   const reiniciarSala = async () => {
     if (!userSession) return;
     
-    // 1. ACTUALIZACIÓN OPTIMISTA: Forzamos el reinicio local inmediato
-    // Esto cierra el modal al instante y da una respuesta ágil al usuario.
+    // 1. Actualización Optimizada (Cierra el modal de inmediato)
     resetearMotorLocal();
 
-    // 2. SINCRONIZACIÓN EN SEGUNDO PLANO
+    // 2. Sincronización en segundo plano con Supabase
     try {
       const { data: sala } = await supabase.from('salas').select('jugadores').eq('codigo_sala', userSession.roomCode).single();
-      if (sala) {
+      if (sala && sala.jugadores) {
         const jugadoresReset = sala.jugadores.map((p: any) => ({ ...p, listo: false }));
         await supabase.from('salas').update({ 
           estado: 'espera', 
           jugadores: jugadoresReset 
         }).eq('codigo_sala', userSession.roomCode);
       }
-    } catch (error) {
-      console.error("> Error crítico en enlace RSD al reiniciar:", error);
+    } catch (e) {
+      console.error("> Error de red al reiniciar:", e);
     }
   };
 

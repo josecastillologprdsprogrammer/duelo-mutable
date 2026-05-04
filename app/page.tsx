@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import OrbitalPanel from './components/OrbitalPanel'; 
 import AccessModal from './components/AccessModal';
 import GuideModal from './components/GuideModal'; 
-import ResultsModal from './components/ResultsModal'; // Ahora con persistencia a Supabase
+import ResultsModal from './components/ResultsModal';
 import { useMotorOrbital } from '../hooks/useMotorOrbital';
 import { SKILLS_CATALOGO } from '../lib/skillsEngine';
 
@@ -61,13 +61,32 @@ export default function Home() {
   const [copiado, setCopiado] = useState(false);
   const [guiaVisible, setGuiaVisible] = useState(false);
   
+  const [radarSize, setRadarSize] = useState(560);
+
   const motor = useMotorOrbital(userSession);
 
   const { 
     estadoPartida, tiempo, energia, score, alerta,
     skillsDesbloqueadas, skillsActivas, efectosLocales, ultimaSkillRecibida,
-    jugadores, countdown, telemetriaRivales, marcarListo, activarSkillManualmente
+    jugadores, countdown, telemetriaRivales, marcarListo, activarSkillManualmente, reiniciarSala
   } = motor;
+
+  useEffect(() => {
+    const adaptarResolucion = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      if (vw < 768) {
+        setRadarSize(vw * 0.85); 
+      } else {
+        const maxSpace = Math.min(vw * 0.4, vh * 0.6);
+        setRadarSize(maxSpace < 400 ? 400 : (maxSpace > 560 ? 560 : maxSpace)); 
+      }
+    };
+    
+    adaptarResolucion(); 
+    window.addEventListener('resize', adaptarResolucion);
+    return () => window.removeEventListener('resize', adaptarResolucion);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem('A316_SESSION');
@@ -95,7 +114,6 @@ export default function Home() {
     return `${m}:${s}`;
   };
 
-  // LOBBY DE IDENTIFICACIÓN (Incluye Hall of Fame interno)
   if (!userSession) return <AccessModal onAccessGranted={(data) => setUserSession(data)} />;
 
   const SLOTS_TOTALES = [1, 2, 3, 4];
@@ -106,13 +124,11 @@ export default function Home() {
   return (
     <main className="relative h-screen w-screen bg-[#050505] overflow-hidden select-none font-mono">
       
-      {/* CSS PARA OCULTAR SCROLLBARS */}
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      {/* CAPA 0: EL BACKGROUND (CHASIS OPERATIVO) */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
           src="/bg.png" 
@@ -122,20 +138,19 @@ export default function Home() {
         <div className="absolute inset-0 bg-radial-gradient from-transparent to-black/60 pointer-events-none" />
       </div>
 
-      {/* CAPA 10: INTERFAZ TÁCTICA */}
       <div className="relative z-10 w-full h-full">
         
-        {/* MODAL DE RESULTADOS (Sincronización de Telemetría Final) */}
+        {/* MODAL DE RESULTADOS: ESTE ES EL ENLACE CRÍTICO */}
         {estadoPartida === 'terminado' && (
           <ResultsModal 
             scoreLocal={score} 
             telemetriaRivales={telemetriaRivales} 
             jugadores={jugadores} 
-            userSession={userSession} 
+            userSession={userSession}
+            onReplay={reiniciarSala} 
           />
         )}
 
-        {/* --- [A] BLOQUE DE SALA (TOP LEFT) --- */}
         <div className="absolute top-10 left-10 flex flex-col gap-3">
           <div className="flex items-end gap-4">
             <div 
@@ -188,7 +203,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* --- [B] BLOQUE DE TIEMPO (CENTER TOP) --- */}
         <div className="absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
           <span className="text-[10px] text-zinc-500 uppercase tracking-[0.5em] mb-1">Temporizador</span>
           <p className={`text-6xl font-bold font-mono leading-none drop-shadow-2xl ${tiempo <= 30 ? 'text-red-500 animate-pulse' : 'text-zinc-200'}`}>
@@ -199,17 +213,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* --- [C] NÚCLEO CENTRAL (RADAR ORBITAL) --- */}
         <div className="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2">
           <OrbitalPanel 
             idJugador={userSession.username} 
             esLocal={true} 
-            size={560} 
+            size={radarSize} 
             motor={{ ...motor, skillsActivas: efectosLocales }} 
           />
         </div>
 
-        {/* --- [D] COLUMNAS DE HABILIDADES --- */}
         <div className="absolute left-[12%] top-[55%] -translate-y-1/2 flex flex-col gap-4 items-center">
           <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-[0.3em] mb-2">Mejoras</span>
           {SKILLS_CATALOGO.filter(s => s.tipo === 'buff').map(skill => (
@@ -224,7 +236,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* --- [E] BOTÓN DE ACCIÓN (ESTABLECER ENLACE) --- */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2">
           {estadoPartida === 'espera' ? (
             <button 
@@ -243,7 +254,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- [F] TELEMETRÍA DE ESCUADRA (ESTÁTICA, SIN SCROLL) --- */}
         <div className="absolute right-6 top-[10%] bottom-[8%] w-[22%] flex flex-col gap-4">
           <div className="flex justify-between items-center border-b border-zinc-900 pb-2 px-1">
             <h2 className="text-[11px] text-zinc-500 uppercase tracking-widest font-bold">Puntos Totales</h2>
@@ -277,7 +287,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* OVERLAY: CUENTA REGRESIVA DE ENLACE */}
       {estadoPartida === 'cuenta_atras' && (
         <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/85 backdrop-blur-3xl">
           <span className="font-mono text-[180px] font-bold text-white animate-pulse drop-shadow-[0_0_50px_rgba(255,255,255,0.2)]">
@@ -287,7 +296,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODAL: GUÍA OPERATIVA (OPERACIONES TÁCTICAS) */}
       {guiaVisible && <GuideModal onClose={() => setGuiaVisible(false)} />}
     </main>
   );
