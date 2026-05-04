@@ -231,6 +231,25 @@ export const useMotorOrbital = (userSession: any) => {
   }, [estadoPartida, skillsActivas, activarSkillManualmente]);
 
   // --- 9. LIFECYCLE DE SALA Y CONEXIÓN ---
+  const resetearMotorLocal = useCallback(() => {
+    setEstadoPartida('espera');
+    setTiempo(TIEMPO_PARTIDA);
+    setScore(0);
+    setEnergia(3000);
+    setSkillsDesbloqueadas([]);
+    setSkillsActivas({});
+    setDebuffsEnemigos({});
+    setTelemetriaRivales({});
+    setAlerta(null);
+    seleccionadosRef.current = [];
+    scoreRef.current = 0;
+    skillsActivasRef.current = {};
+    
+    nodosRef.current = nodosRef.current.map(n => ({
+      ...n, velocidad: 0, anillo: anillosBaseRef.current[n.id] || n.anillo
+    }));
+  }, []);
+
   useEffect(() => {
     if (!userSession) return;
     const canal = supabase.channel(`telemetria:${userSession.roomCode}`, { config: { broadcast: { self: false } } });
@@ -243,14 +262,27 @@ export const useMotorOrbital = (userSession: any) => {
       event: 'UPDATE', schema: 'public', table: 'salas', filter: `codigo_sala=eq.${userSession.roomCode}` 
     }, (payload) => {
       setJugadores(payload.new.jugadores);
-      // Sincronización global del final de partida
       if (payload.new.estado === 'terminado') {
         setEstadoPartida('terminado');
+      } else if (payload.new.estado === 'espera') {
+        resetearMotorLocal();
       }
     }).subscribe();
 
     return () => { canal.unsubscribe(); canalDB.unsubscribe(); };
-  }, [userSession]);
+  }, [userSession, resetearMotorLocal]);
+
+  const reiniciarSala = async () => {
+    if (!userSession) return;
+    const { data: sala } = await supabase.from('salas').select('jugadores').eq('codigo_sala', userSession.roomCode).single();
+    if (!sala) return;
+    
+    const jugadoresReset = sala.jugadores.map((p: any) => ({ ...p, listo: false }));
+    await supabase.from('salas').update({ 
+      estado: 'espera', 
+      jugadores: jugadoresReset 
+    }).eq('codigo_sala', userSession.roomCode);
+  };
 
   useEffect(() => {
     if (jugadores.length === 0) return;
@@ -281,7 +313,6 @@ export const useMotorOrbital = (userSession: any) => {
       return () => clearInterval(timer);
     } else if (tiempo === 0 && estadoPartida === 'jugando') {
       setEstadoPartida('terminado');
-      // Host-Sync: El primer slot dicta el cierre en la DB para toda la escuadra
       if (userSession.slot === 1) {
         supabase.from('salas').update({ estado: 'terminado' }).eq('codigo_sala', userSession.roomCode).then();
       }
@@ -316,6 +347,7 @@ export const useMotorOrbital = (userSession: any) => {
     jugadores, countdown, telemetriaRivales,
     marcarListo, 
     activarSkillManualmente,
+    reiniciarSala,
     procesarInteraccion: (mouseX: number, mouseY: number, centerX: number, centerY: number) => {
       if (estadoPartida !== 'jugando') return;
       const idx = nodosRef.current.findIndex(n => Math.sqrt(Math.pow(mouseX - obtenerCoords(n, centerX, centerY).x, 2) + Math.pow(mouseY - obtenerCoords(n, centerX, centerY).y, 2)) < 25);

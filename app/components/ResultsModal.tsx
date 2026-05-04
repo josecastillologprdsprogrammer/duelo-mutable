@@ -8,9 +8,10 @@ interface ResultsModalProps {
   telemetriaRivales: Record<number, any>;
   jugadores: any[];
   userSession: { id: string; username: string; roomCode: string } | null;
+  onReplay: () => void; // <-- INYECCIÓN DE DEPENDENCIA PARA EL BUCLE DE JUEGO
 }
 
-export default function ResultsModal({ scoreLocal, telemetriaRivales, jugadores, userSession }: ResultsModalProps) {
+export default function ResultsModal({ scoreLocal, telemetriaRivales, jugadores, userSession, onReplay }: ResultsModalProps) {
   const [guardado, setGuardado] = useState(false);
 
   // 1. Lógica de Persistencia (Guardar en Supabase)
@@ -116,17 +117,28 @@ export default function ResultsModal({ scoreLocal, telemetriaRivales, jugadores,
           </div>
         </div>
 
-        {/* FOOTER: Acciones */}
-        <div className="p-6 border-t border-cyan-900/50 bg-black/40 text-center">
+        {/* FOOTER: Acciones de Arquitectura */}
+        <div className="p-6 border-t border-cyan-900/50 bg-black/40 text-center flex flex-col gap-3">
+          
+          {/* BOTÓN PRIMARIO: Mantiene la conexión, reinicia la máquina de estados */}
+          <button 
+            onClick={onReplay}
+            className="w-full py-4 bg-cyan-500/10 border border-cyan-500 text-cyan-400 text-xs font-bold tracking-[0.3em] uppercase hover:bg-cyan-500 hover:text-black transition-all shadow-[0_0_15px_rgba(6,182,212,0.2)]"
+          >
+            [ INICIAR NUEVA SECUENCIA ]
+          </button>
+
+          {/* BOTÓN SECUNDARIO: Hard Reset (Expulsa del lobby) */}
           <button 
             onClick={() => window.location.reload()}
-            className="w-full py-4 bg-zinc-900 border border-zinc-700 text-white text-xs font-bold tracking-[0.3em] uppercase hover:bg-white hover:text-black transition-all shadow-lg"
+            className="w-full py-2 bg-transparent border border-zinc-800 text-zinc-500 text-[10px] font-bold tracking-[0.2em] uppercase hover:bg-red-900/20 hover:text-red-400 hover:border-red-900/50 transition-all"
           >
-            [ DESCONECTAR Y VOLVER AL LOBBY ]
+            [ ABORTAR ENLACE Y DESCONECTAR ]
           </button>
+
           {guardado && (
-            <p className="mt-4 text-[8px] text-green-500 animate-pulse uppercase tracking-widest font-bold">
-              ✓ Telemetría guardada en el Hall of Fame Global
+            <p className="mt-2 text-[8px] text-green-500 animate-pulse uppercase tracking-widest font-bold">
+              ✓ Telemetría guardada en la matriz global
             </p>
           )}
         </div>
