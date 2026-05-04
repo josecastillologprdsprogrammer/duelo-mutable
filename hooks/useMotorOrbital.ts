@@ -247,7 +247,7 @@ export const useMotorOrbital = (userSession: any) => {
     setJugadores(prev => prev.map(p => ({ ...p, listo: false }))); 
     setTiempo(TIEMPO_PARTIDA);
     setScore(0);
-    setEnergia(3000);
+    setEnergia(1000);
     setSkillsDesbloqueadas([]);
     setSkillsActivas({});
     setDebuffsEnemigos({});

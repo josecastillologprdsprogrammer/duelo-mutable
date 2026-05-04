@@ -118,7 +118,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
                   <div className="w-10 h-10 border border-cyan-500/50 flex items-center justify-center text-sm font-bold text-cyan-500 shrink-0 bg-cyan-950/20">1</div>
                   <p className="text-[11px] leading-relaxed">
                     <span className="text-white font-bold block mb-1">Sin puntas hacia adentro:</span> 
-                    Las figuras siempre deben ser "gorditas" o planas. No puedes armar formas de estrella, ni figuras que se parezcan a un "Pac-Man" con la boca abierta.
+                    Las figuras siempre deben ser gruesas o planas. No puedes armar formas de estrella, ni figuras que se parezcan a un "Pac-Man" con la boca abierta.
                   </p>
                 </div>
                 
@@ -126,7 +126,7 @@ export default function GuideModal({ onClose }: GuideModalProps) {
                   <div className="w-10 h-10 border border-cyan-500/50 flex items-center justify-center text-sm font-bold text-cyan-500 shrink-0 bg-cyan-950/20">2</div>
                   <p className="text-[11px] leading-relaxed">
                     <span className="text-white font-bold block mb-1">Que no queden muy estiradas:</span> 
-                    Intenta que los lados de tu figura sean parecidos. Si unes puntos que están muy, muy lejos y formas una línea súper flaca y estirada, el juego la rechazará.
+                    Intenta que los lados de tu figura sean parecidos. Si unes puntos que están muy, muy lejos y formas una línea súper delgadas y estirada, el juego la rechazará.
                   </p>
                 </div>
                 
