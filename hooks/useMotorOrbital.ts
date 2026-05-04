@@ -29,6 +29,11 @@ export const useMotorOrbital = (userSession: any) => {
   const [telemetriaRivales, setTelemetriaRivales] = useState<{ [key: number]: any }>({});
   
   const [estadoPartida, setEstadoPartida] = useState<'espera' | 'cuenta_atras' | 'jugando' | 'terminado'>('espera');
+  
+  // NUEVO: Candado de Arquitectura para rastrear el historial de estado sin re-renderizados
+  const estadoPartidaRef = useRef(estadoPartida);
+  useEffect(() => { estadoPartidaRef.current = estadoPartida; }, [estadoPartida]);
+
   const [tiempo, setTiempo] = useState(TIEMPO_PARTIDA);
   const [score, setScore] = useState(0);
   const [energia, setEnergia] = useState(3000); 
@@ -233,10 +238,7 @@ export const useMotorOrbital = (userSession: any) => {
   // --- 9. LIFECYCLE DE SALA Y CONEXIÓN ---
   const resetearMotorLocal = useCallback(() => {
     setEstadoPartida('espera');
-    
-    // CRÍTICO: Forzar localmente a todos a "listo: false" para evitar auto-arranque
-    setJugadores(prev => prev.map(p => ({ ...p, listo: false }))); 
-    
+    // CORRECCIÓN: Se eliminó la limpieza destructiva de 'jugadores' aquí.
     setTiempo(TIEMPO_PARTIDA);
     setScore(0);
     setEnergia(3000);
@@ -266,9 +268,11 @@ export const useMotorOrbital = (userSession: any) => {
       event: 'UPDATE', schema: 'public', table: 'salas', filter: `codigo_sala=eq.${userSession.roomCode}` 
     }, (payload) => {
       setJugadores(payload.new.jugadores);
+      
       if (payload.new.estado === 'terminado') {
         setEstadoPartida('terminado');
-      } else if (payload.new.estado === 'espera') {
+      } else if (payload.new.estado === 'espera' && estadoPartidaRef.current === 'terminado') {
+        // CORRECCIÓN: Ahora solo limpiará la mesa si ES ESTRICTAMENTE el cierre de una partida.
         resetearMotorLocal();
       }
     }).subscribe();
@@ -279,10 +283,8 @@ export const useMotorOrbital = (userSession: any) => {
   const reiniciarSala = async () => {
     if (!userSession) return;
     
-    // 1. Actualización Optimizada (Cierra el modal de inmediato)
     resetearMotorLocal();
 
-    // 2. Sincronización en segundo plano con Supabase
     try {
       const { data: sala } = await supabase.from('salas').select('jugadores').eq('codigo_sala', userSession.roomCode).single();
       if (sala && sala.jugadores) {
