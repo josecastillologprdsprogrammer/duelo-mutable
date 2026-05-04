@@ -144,8 +144,22 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
 
         <div className="relative border border-cyan-500/30 p-8 bg-black/75">
           
+          {/* TÍTULO COMERCIAL DEL JUEGO */}
+          <div className="relative mb-8 text-center">
+            {/* Líneas laterales de diseño de interfaz */}
+            <div className="absolute top-1/2 left-0 w-[15%] h-[1px] bg-gradient-to-r from-transparent to-cyan-500/80" />
+            <div className="absolute top-1/2 right-0 w-[15%] h-[1px] bg-gradient-to-l from-transparent to-cyan-500/80" />
+            
+            <h1 className="text-[32px] font-black tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-white via-cyan-200 to-cyan-500 drop-shadow-[0_0_15px_rgba(34,211,238,0.6)] uppercase italic leading-none">
+            Geometry Crossroads
+            </h1>
+            <p className="text-[9px] text-cyan-400/80 mt-2 tracking-[0.4em] uppercase font-bold">
+              Motor Físico Orbital A-316
+            </p>
+          </div>
+
           {/* SECCIÓN: HALL OF FAME (TOP 5) */}
-          <div className="mb-8 border-b border-zinc-800 pb-6">
+          <div className="mb-6 border-y border-zinc-800/80 py-5">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-bold">Hall_of_Fame</h3>
               <div className="flex gap-2">
@@ -180,22 +194,19 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
           </div>
 
           {/* SECCIÓN: IDENTIFICACIÓN */}
-          <div className="mb-8 text-center">
-            <h2 className="text-[24px] font-bold tracking-[0.1em] text-cyan-400 drop-shadow-[0_0_12px_rgba(34,211,238,0.8)] uppercase whitespace-nowrap">
-              Identificación de Piloto
+          <div className="mb-6 text-center">
+            <h2 className="text-[20px] font-bold tracking-[0.1em] text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] uppercase whitespace-nowrap">
+              Identificación
             </h2>
-            <p className="text-[10px] text-zinc-500 mt-2 tracking-[0.2em] uppercase">
-              Sistema de Acceso Público A316
-            </p>
             
-            <div className="relative mt-8 flex items-center justify-center">
+            <div className="relative mt-5 flex items-center justify-center">
               <div className="w-full h-[1px] bg-zinc-800" />
-              <div className="absolute bg-cyan-500 w-2.5 h-2.5 rotate-45 border border-black shadow-[0_0_8px_#22d3ee]" />
+              <div className="absolute bg-cyan-500 w-2 h-2 rotate-45 border border-black shadow-[0_0_8px_#22d3ee]" />
             </div>
           </div>
 
-          <form onSubmit={handleAccess} className="space-y-6">
-            <div className="space-y-3">
+          <form onSubmit={handleAccess} className="space-y-5">
+            <div className="space-y-2">
               <label className="block text-[10px] text-zinc-600 uppercase tracking-widest ml-1">User_ID</label>
               <input
                 required
@@ -203,19 +214,19 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-black/40 border border-cyan-900/60 p-4 text-sm text-cyan-400 focus:outline-none focus:border-cyan-400 transition-all uppercase placeholder:text-zinc-900 shadow-inner"
+                className="w-full bg-black/40 border border-cyan-900/60 p-3.5 text-sm text-cyan-400 focus:outline-none focus:border-cyan-400 transition-all uppercase placeholder:text-zinc-900 shadow-inner"
                 placeholder="ESCRIBE TU ALIAS..."
                 maxLength={12}
               />
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               <label className="block text-[10px] text-zinc-600 uppercase tracking-widest ml-1">Link_Code (Opcional)</label>
               <input
                 type="text"
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value)}
-                className="w-full bg-black/40 border border-cyan-900/40 p-4 text-sm text-zinc-300 focus:outline-none focus:border-cyan-400/50 transition-all uppercase placeholder:text-zinc-900 shadow-inner"
+                className="w-full bg-black/40 border border-cyan-900/40 p-3.5 text-sm text-zinc-300 focus:outline-none focus:border-cyan-400/50 transition-all uppercase placeholder:text-zinc-900 shadow-inner"
                 placeholder="CÓDIGO PARA UNIRSE..."
                 maxLength={6}
               />
@@ -231,7 +242,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
 
             <button
               disabled={loading || !username}
-              className="w-full py-5 bg-cyan-500/10 border border-cyan-500/60 text-cyan-300 font-bold uppercase hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-20 shadow-[0_0_20px_rgba(6,182,212,0.2)] group relative overflow-hidden"
+              className="w-full py-4 mt-2 bg-cyan-500/10 border border-cyan-500/60 text-cyan-300 font-bold uppercase hover:bg-cyan-500 hover:text-black transition-all disabled:opacity-20 shadow-[0_0_20px_rgba(6,182,212,0.2)] group relative overflow-hidden"
             >
               <span className="relative z-10 tracking-[0.2em] drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">
                 {loading ? 'SINC_ENLACE...' : roomCode ? 'VINCULAR A ESCUADRA' : 'INICIAR NUEVA MATRIZ'}
@@ -241,8 +252,8 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
           </form>
 
           {/* Decoración Inferior */}
-          <div className="mt-10 flex flex-col items-center gap-2 opacity-70">
-            <div className="w-2.5 h-2.5 rounded-full border border-cyan-400 shadow-[0_0_10px_#22d3ee]" />
+          <div className="mt-8 flex flex-col items-center gap-2 opacity-70">
+            <div className="w-2 h-2 rounded-full border border-cyan-400 shadow-[0_0_10px_#22d3ee]" />
             <div className="w-[1px] h-6 bg-gradient-to-b from-cyan-400 to-transparent" />
           </div>
         </div>
