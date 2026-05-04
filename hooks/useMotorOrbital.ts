@@ -8,7 +8,7 @@ import { SKILLS_CATALOGO } from '@/lib/skillsEngine';
 
 const PALETA_COLORES = ['#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'];
 const COLOR_CONGELADO = '#00e5ff';
-const TIEMPO_PARTIDA = 5; 
+const TIEMPO_PARTIDA = 300; 
 
 const OBTENER_DURACION = (skillId: string) => {
   if (skillId === 'd3' || skillId === 'd4') return 5000; 

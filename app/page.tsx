@@ -194,7 +194,7 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-bold text-yellow-500 uppercase min-w-[75px]">Energia Acumulada: {Math.floor(energia)}U</span>
               <div className="w-48 h-1.5 bg-zinc-900 border border-zinc-800 rounded-full overflow-hidden">
-                <div className="h-full bg-yellow-500 shadow-[0_0_10px_#eab308] transition-all duration-300" style={{ width: `${(energia / 3000) * 100}%` }} />
+                <div className="h-full bg-yellow-500 shadow-[0_0_10px_#eab308] transition-all duration-300" style={{ width: `${(energia / 1500) * 100}%` }} />
               </div>
             </div>
             <p className="text-[11px] text-cyan-500 uppercase tracking-[0.2em] font-bold">
