@@ -272,16 +272,27 @@ export const useMotorOrbital = (userSession: any) => {
     return () => { canal.unsubscribe(); canalDB.unsubscribe(); };
   }, [userSession, resetearMotorLocal]);
 
+  // === INTERVENCIÓN APLICADA AQUÍ ===
   const reiniciarSala = async () => {
     if (!userSession) return;
-    const { data: sala } = await supabase.from('salas').select('jugadores').eq('codigo_sala', userSession.roomCode).single();
-    if (!sala) return;
     
-    const jugadoresReset = sala.jugadores.map((p: any) => ({ ...p, listo: false }));
-    await supabase.from('salas').update({ 
-      estado: 'espera', 
-      jugadores: jugadoresReset 
-    }).eq('codigo_sala', userSession.roomCode);
+    // 1. ACTUALIZACIÓN OPTIMISTA: Forzamos el reinicio local inmediato
+    // Esto cierra el modal al instante y da una respuesta ágil al usuario.
+    resetearMotorLocal();
+
+    // 2. SINCRONIZACIÓN EN SEGUNDO PLANO
+    try {
+      const { data: sala } = await supabase.from('salas').select('jugadores').eq('codigo_sala', userSession.roomCode).single();
+      if (sala) {
+        const jugadoresReset = sala.jugadores.map((p: any) => ({ ...p, listo: false }));
+        await supabase.from('salas').update({ 
+          estado: 'espera', 
+          jugadores: jugadoresReset 
+        }).eq('codigo_sala', userSession.roomCode);
+      }
+    } catch (error) {
+      console.error("> Error crítico en enlace RSD al reiniciar:", error);
+    }
   };
 
   useEffect(() => {
