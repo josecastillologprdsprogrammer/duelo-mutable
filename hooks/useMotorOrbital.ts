@@ -30,9 +30,11 @@ export const useMotorOrbital = (userSession: any) => {
   
   const [estadoPartida, setEstadoPartida] = useState<'espera' | 'cuenta_atras' | 'jugando' | 'terminado'>('espera');
   
-  // NUEVO: Candado de Arquitectura para rastrear el historial de estado sin re-renderizados
   const estadoPartidaRef = useRef(estadoPartida);
   useEffect(() => { estadoPartidaRef.current = estadoPartida; }, [estadoPartida]);
+
+  // === NUEVO: CANDADO DE ARRANQUE ANTI-RACE CONDITION ===
+  const lockArranque = useRef(false);
 
   const [tiempo, setTiempo] = useState(TIEMPO_PARTIDA);
   const [score, setScore] = useState(0);
@@ -237,8 +239,12 @@ export const useMotorOrbital = (userSession: any) => {
 
   // --- 9. LIFECYCLE DE SALA Y CONEXIÓN ---
   const resetearMotorLocal = useCallback(() => {
+    // Activamos el candado por 1.5 segundos para ignorar ecos de la base de datos
+    lockArranque.current = true;
+    setTimeout(() => { lockArranque.current = false; }, 1500);
+
     setEstadoPartida('espera');
-    // CORRECCIÓN: Se eliminó la limpieza destructiva de 'jugadores' aquí.
+    setJugadores(prev => prev.map(p => ({ ...p, listo: false }))); 
     setTiempo(TIEMPO_PARTIDA);
     setScore(0);
     setEnergia(3000);
@@ -272,7 +278,6 @@ export const useMotorOrbital = (userSession: any) => {
       if (payload.new.estado === 'terminado') {
         setEstadoPartida('terminado');
       } else if (payload.new.estado === 'espera' && estadoPartidaRef.current === 'terminado') {
-        // CORRECCIÓN: Ahora solo limpiará la mesa si ES ESTRICTAMENTE el cierre de una partida.
         resetearMotorLocal();
       }
     }).subscribe();
@@ -283,17 +288,19 @@ export const useMotorOrbital = (userSession: any) => {
   const reiniciarSala = async () => {
     if (!userSession) return;
     
+    // Capturamos el array limpio antes de enviarlo, para no depender del .select()
+    const jugadoresActuales = [...jugadores];
+    
+    // UI Responde de inmediato y bloquea el auto-arranque
     resetearMotorLocal();
 
     try {
-      const { data: sala } = await supabase.from('salas').select('jugadores').eq('codigo_sala', userSession.roomCode).single();
-      if (sala && sala.jugadores) {
-        const jugadoresReset = sala.jugadores.map((p: any) => ({ ...p, listo: false }));
-        await supabase.from('salas').update({ 
-          estado: 'espera', 
-          jugadores: jugadoresReset 
-        }).eq('codigo_sala', userSession.roomCode);
-      }
+      const jugadoresReset = jugadoresActuales.map((p: any) => ({ ...p, listo: false }));
+      // Inyección directa a DB sin consultas lentas
+      await supabase.from('salas').update({ 
+        estado: 'espera', 
+        jugadores: jugadoresReset 
+      }).eq('codigo_sala', userSession.roomCode);
     } catch (e) {
       console.error("> Error de red al reiniciar:", e);
     }
@@ -303,7 +310,10 @@ export const useMotorOrbital = (userSession: any) => {
     if (jugadores.length === 0) return;
     const escuadraCompleta = jugadores.length === 4;
     const todosListos = jugadores.every(p => p.listo === true);
-    if (escuadraCompleta && todosListos && estadoPartida === 'espera') {
+    
+    // === EL CANDADO EN ACCIÓN ===
+    // Si lockArranque.current es true, ignoramos la señal aunque parezcan estar listos
+    if (escuadraCompleta && todosListos && estadoPartida === 'espera' && !lockArranque.current) {
       setEstadoPartida('cuenta_atras');
       setCountdown(10);
     }
