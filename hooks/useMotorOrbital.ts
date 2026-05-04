@@ -33,12 +33,12 @@ export const useMotorOrbital = (userSession: any) => {
   const estadoPartidaRef = useRef(estadoPartida);
   useEffect(() => { estadoPartidaRef.current = estadoPartida; }, [estadoPartida]);
 
-  // === NUEVO: CANDADO DE ARRANQUE ANTI-RACE CONDITION ===
+  // === CANDADO DE ARRANQUE ANTI-RACE CONDITION ===
   const lockArranque = useRef(false);
 
   const [tiempo, setTiempo] = useState(TIEMPO_PARTIDA);
   const [score, setScore] = useState(0);
-  const [energia, setEnergia] = useState(3000); 
+  const [energia, setEnergia] = useState(500); // <-- Energía inicial ajustada a 500
   const [alerta, setAlerta] = useState<string | null>(null);
 
   const [skillsDesbloqueadas, setSkillsDesbloqueadas] = useState<string[]>([]);
@@ -88,11 +88,18 @@ export const useMotorOrbital = (userSession: any) => {
   const activarSkillManualmente = useCallback((skillId: string) => {
     if (estadoPartida !== 'jugando') return;
     const skill = SKILLS_CATALOGO.find(s => s.id === skillId);
+    
     if (skill && skillsDesbloqueadas.includes(skill.id) && energia >= skill.costo && !skillsActivas[skill.id]) {
       const expireAt = Date.now() + OBTENER_DURACION(skill.id); 
       const nuevasSkills = { ...skillsActivas, [skill.id]: expireAt };
+      
       setEnergia(prev => prev - skill.costo);
       setSkillsActivas(nuevasSkills);
+      
+      // CRÍTICO: Consumimos la habilidad sacándola del inventario de desbloqueadas.
+      // Esto apaga el botón en la UI y la devuelve al pool aleatorio de drops.
+      setSkillsDesbloqueadas(prev => prev.filter(id => id !== skillId));
+      
       setAlerta(`${skill.nombre} EN LÍNEA`);
       transmitirSync(seleccionadosRef.current.map(n => String(n.id)), scoreRef.current, nuevasSkills);
     }
@@ -247,7 +254,7 @@ export const useMotorOrbital = (userSession: any) => {
     setJugadores(prev => prev.map(p => ({ ...p, listo: false }))); 
     setTiempo(TIEMPO_PARTIDA);
     setScore(0);
-    setEnergia(1000);
+    setEnergia(500); // <-- Reseteo ajustado a 500
     setSkillsDesbloqueadas([]);
     setSkillsActivas({});
     setDebuffsEnemigos({});
