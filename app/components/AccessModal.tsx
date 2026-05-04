@@ -154,7 +154,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
             Geometry Crossroads
             </h1>
             <p className="text-[9px] text-cyan-400/80 mt-2 tracking-[0.4em] uppercase font-bold">
-              Motor Físico Orbital A-316
+            SINCRONIZA LA ÓRBITA. DOMINA EL VACÍO
             </p>
           </div>
 
