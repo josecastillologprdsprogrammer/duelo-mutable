@@ -33,12 +33,12 @@ export const useMotorOrbital = (userSession: any) => {
   const estadoPartidaRef = useRef(estadoPartida);
   useEffect(() => { estadoPartidaRef.current = estadoPartida; }, [estadoPartida]);
 
-  // === CANDADO DE ARRANQUE ANTI-RACE CONDITION ===
+  // === NUEVO: CANDADO DE ARRANQUE ANTI-RACE CONDITION ===
   const lockArranque = useRef(false);
 
   const [tiempo, setTiempo] = useState(TIEMPO_PARTIDA);
   const [score, setScore] = useState(0);
-  const [energia, setEnergia] = useState(500); // <-- Energía inicial ajustada a 500
+  const [energia, setEnergia] = useState(500); 
   const [alerta, setAlerta] = useState<string | null>(null);
 
   const [skillsDesbloqueadas, setSkillsDesbloqueadas] = useState<string[]>([]);
@@ -140,27 +140,37 @@ export const useMotorOrbital = (userSession: any) => {
     setDebuffsEnemigos(debuffsActivos);
   }, [telemetriaRivales]);
 
-  // --- 6. MOTOR FÍSICO ---
+  // --- 6. MOTOR FÍSICO (CON CORTAFUEGOS DE ESCUDO) ---
   useEffect(() => {
     let animationFrameId: number;
     const tick = () => {
       if (estadoPartida === 'jugando') {
         let multVelocidad = 1.4; 
         let direccion = 1;
+        
+        // Verificamos si tenemos el escudo activo
+        const tengoEscudo = !!skillsActivas['b4'];
+
         if (skillsActivas['b1']) multVelocidad *= 0.3; 
-        if (debuffsEnemigos['d5']) multVelocidad *= 3.0; 
-        if (debuffsEnemigos['d2']) direccion = -1; 
+        
+        // Si no tenemos escudo, los debuffs nos afectan
+        if (!tengoEscudo) {
+          if (debuffsEnemigos['d5']) multVelocidad *= 3.0; 
+          if (debuffsEnemigos['d2']) direccion = -1; 
+        }
 
         nodosRef.current = nodosRef.current.map(n => {
           const anilloOriginal = anillosBaseRef.current[n.id] || n.anillo;
           let anilloActual = n.anillo;
-          if (debuffsEnemigos['d3']) {
+          
+          if (debuffsEnemigos['d3'] && !tengoEscudo) {
             anilloActual = Math.max(anilloActual - 3, 20); 
           } else if (skillsActivas['b2']) {
             anilloActual = Math.max(anilloActual - 1.5, anilloOriginal * 0.65);
           } else if (anilloActual < anilloOriginal) {
             anilloActual = Math.min(anilloActual + 2, anilloOriginal);
           }
+          
           return {
             ...n,
             anillo: anilloActual,
@@ -254,7 +264,7 @@ export const useMotorOrbital = (userSession: any) => {
     setJugadores(prev => prev.map(p => ({ ...p, listo: false }))); 
     setTiempo(TIEMPO_PARTIDA);
     setScore(0);
-    setEnergia(500); // <-- Reseteo ajustado a 500
+    setEnergia(500); 
     setSkillsDesbloqueadas([]);
     setSkillsActivas({});
     setDebuffsEnemigos({});

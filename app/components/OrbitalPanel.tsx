@@ -22,21 +22,34 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
   } = motor;
 
   // ============================================================================
-  // FILTRO DE PRESENTACIÓN: Aislamiento de Buffs (Propios) y Debuffs (Recibidos)
+  // FILTRO DE PRESENTACIÓN Y CORTAFUEGOS (SHIELD BLOCKER)
   // ============================================================================
   const efectosVisibles: Record<string, boolean> = {};
+  
+  // Verificamos si el jugador actual (local o rival) tiene el escudo activo
+  const tieneEscudo = !!propSkills['b4'] || !!motor.skillsActivas?.['b4'];
 
   if (esLocal) {
-    // Mi Panel: Buffs que yo lancé + Debuffs que otros me lanzaron
+    // 1. Mis Buffos siempre se muestran
     Object.keys(propSkills).forEach(id => { if (id.startsWith('b')) efectosVisibles[id] = true; });
-    Object.keys(debuffsEnemigos).forEach(id => { efectosVisibles[id] = true; });
+
+    // 2. Si NO tengo el escudo, sufro los Debuffos
+    if (!tieneEscudo) {
+      Object.keys(debuffsEnemigos).forEach(id => { efectosVisibles[id] = true; });
+      Object.keys(propSkills).forEach(id => { if (id.startsWith('d')) efectosVisibles[id] = true; });
+    }
   } else {
-    // Panel Rival: Sus Buffs + Debuffs que sufren (enviados por mí u otros)
+    // 1. Buffos del Rival siempre se muestran
     Object.keys(propSkills).forEach(id => { if (id.startsWith('b')) efectosVisibles[id] = true; });
-    Object.keys(motor.skillsActivas || {}).forEach(id => { if (id.startsWith('d')) efectosVisibles[id] = true; });
-    Object.keys(debuffsEnemigos).forEach(id => { efectosVisibles[id] = true; });
-    // Limpiamos sabotajes que ellos lanzaron (fuego amigo visual)
-    Object.keys(propSkills).forEach(id => { if (id.startsWith('d')) delete efectosVisibles[id]; });
+    Object.keys(motor.skillsActivas || {}).forEach(id => { if (id.startsWith('b')) efectosVisibles[id] = true; });
+
+    // 2. Si el Rival NO tiene escudo, sufre los Debuffos
+    if (!tieneEscudo) {
+      Object.keys(motor.skillsActivas || {}).forEach(id => { if (id.startsWith('d')) efectosVisibles[id] = true; });
+      Object.keys(debuffsEnemigos).forEach(id => { efectosVisibles[id] = true; });
+      // Limpiamos sabotajes que ellos lanzaron (fuego amigo visual)
+      Object.keys(propSkills).forEach(id => { if (id.startsWith('d')) delete efectosVisibles[id]; });
+    }
   }
 
   // Mapeo de estados para renderizado condicional
@@ -176,54 +189,59 @@ export default function OrbitalPanel({ idJugador, esLocal = false, size, motor }
         
         {/* --- CAPA DE DEBUFFS --- */}
         {isCegado && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none mix-blend-color-dodge opacity-80 transition-opacity">
-            <img src="/skills/d1.png" alt="" className="w-[80%] h-[80%] object-contain animate-pulse blur-sm" />
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-          </div>
+          <>
+            {/* Neblina Pesada y Pulsante */}
+            <div className="absolute inset-0 z-40 bg-zinc-400/20 backdrop-blur-lg rounded-full animate-[pulse_2s_ease-in-out_infinite] pointer-events-none" />
+            {/* Ojo Transparente */}
+            <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none mix-blend-screen">
+              <img src="/skills/d1.png" alt="Flare" className="w-[80%] h-[80%] object-contain animate-pulse opacity-80" />
+            </div>
+          </>
         )}
         {isColapso && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-            <img src="/skills/d3.png" alt="" className="w-1/2 h-1/2 object-contain mix-blend-screen animate-[spin_2s_linear_infinite]" />
+          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none mix-blend-screen">
+            <img src="/skills/d3.png" alt="Void" className="w-1/2 h-1/2 object-contain animate-[spin_2s_linear_infinite]" />
           </div>
         )}
         {isBloqueado && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-red-900/20 backdrop-blur-[1px] pointer-events-none">
-            <img src="/skills/d4.png" alt="" className="w-1/3 h-1/3 object-contain opacity-80 animate-bounce" />
+          <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none mix-blend-screen">
+            <div className="absolute inset-0 bg-red-900/20 backdrop-blur-[1px] mix-blend-normal" />
+            <img src="/skills/d4.png" alt="Ghost" className="w-1/3 h-1/3 object-contain opacity-80 animate-bounce" />
           </div>
         )}
         {isAcelerado && (
-          <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
-            <img src="/skills/d5.png" alt="" className="w-[90%] h-[90%] object-contain opacity-15 mix-blend-screen animate-[spin_1s_linear_infinite]" />
-            <div className="absolute inset-0 border-[6px] border-orange-500 rounded-full animate-pulse opacity-50" />
+          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none mix-blend-screen">
+            <div className="absolute inset-0 border-[6px] border-orange-500 rounded-full animate-pulse opacity-50 mix-blend-normal" />
+            <img src="/skills/d5.png" alt="Overload" className="w-[90%] h-[90%] object-contain opacity-40 animate-[spin_1s_linear_infinite]" />
           </div>
         )}
 
         {/* --- CAPA DE BUFFS --- */}
         {isChronos && (
-          <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center opacity-10">
-            <img src="/skills/b1.png" alt="" className="w-[80%] h-[80%] object-contain mix-blend-screen animate-[pulse_4s_ease-in-out_infinite]" />
+          <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none mix-blend-screen opacity-30">
+            <img src="/skills/b1.png" alt="Chronos" className="w-[80%] h-[80%] object-contain animate-[pulse_4s_ease-in-out_infinite]" />
           </div>
         )}
         {isMagnetar && (
-          <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center opacity-15">
-            <div className="absolute inset-0 border-2 border-blue-500 rounded-full animate-ping opacity-30" />
-            <img src="/skills/b2.png" alt="" className="w-[60%] h-[60%] object-contain mix-blend-screen animate-[spin_8s_linear_infinite_reverse]" />
+          <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none mix-blend-screen opacity-40">
+            <div className="absolute inset-0 border-2 border-blue-500 rounded-full animate-ping opacity-30 mix-blend-normal" />
+            <img src="/skills/b2.png" alt="Magnetar" className="w-[60%] h-[60%] object-contain animate-[spin_8s_linear_infinite_reverse]" />
           </div>
         )}
         {isDouble && (
-          <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center opacity-15">
-            <img src="/skills/b3.png" alt="" className="w-[70%] h-[70%] object-contain mix-blend-screen animate-pulse" />
+          <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none mix-blend-screen opacity-40">
+            <img src="/skills/b3.png" alt="Double" className="w-[70%] h-[70%] object-contain animate-pulse" />
           </div>
         )}
         {isShield && (
-          <div className="absolute inset-0 z-20 pointer-events-none">
-            <div className="absolute inset-0 border-4 border-purple-500 rounded-full animate-ping opacity-20" />
-            <img src="/skills/b4.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 mix-blend-screen animate-[spin_10s_linear_infinite]" />
+          <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none mix-blend-screen">
+            <div className="absolute inset-0 border-4 border-purple-500 rounded-full animate-ping opacity-20 mix-blend-normal" />
+            <img src="/skills/b4.png" alt="Shield" className="absolute inset-0 w-full h-full object-cover opacity-20 animate-[spin_10s_linear_infinite]" />
           </div>
         )}
         {isRegen && (
-          <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center opacity-10">
-            <img src="/skills/b5.png" alt="" className="w-[80%] h-[80%] object-contain mix-blend-screen animate-bounce" />
+          <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none mix-blend-screen opacity-30">
+            <img src="/skills/b5.png" alt="Regen" className="w-[80%] h-[80%] object-contain animate-bounce" />
           </div>
         )}
 
