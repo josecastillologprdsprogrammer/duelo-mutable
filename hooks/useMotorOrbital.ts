@@ -11,7 +11,7 @@ const COLOR_CONGELADO = '#00e5ff';
 const TIEMPO_PARTIDA = 300; 
 
 const OBTENER_DURACION = (skillId: string) => {
-  if (skillId === 'd3' || skillId === 'd4') return 5000; 
+  if (skillId === 'd3' || skillId === 'd4') return 1000; 
   return 10000; 
 };
 
