@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import FeedbackModal from './FeedbackModal'; // <-- IMPORTACIÓN DEL MÓDULO DE TELEMETRÍA
 
 interface AccessModalProps {
   onAccessGranted: (userData: { id: string; username: string; slot: number; roomCode: string }) => void;
@@ -23,6 +24,9 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ESTADO PARA EL MODAL DE FEEDBACK
+  const [showFeedback, setShowFeedback] = useState(false);
 
   // ESTADOS DEL HALL OF FAME
   const [ranking, setRanking] = useState<any[]>([]);
@@ -251,13 +255,28 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
             </button>
           </form>
 
-          {/* Decoración Inferior */}
+          {/* Decoración Inferior + Botón de Reporte */}
           <div className="mt-8 flex flex-col items-center gap-2 opacity-70">
+            <button 
+              type="button" 
+              onClick={() => setShowFeedback(true)}
+              className="text-[9px] text-zinc-500 hover:text-cyan-400 uppercase tracking-widest border-b border-transparent hover:border-cyan-400 transition-all mb-1"
+            >
+              [ Reporte de Experiencia ]
+            </button>
             <div className="w-2 h-2 rounded-full border border-cyan-400 shadow-[0_0_10px_#22d3ee]" />
             <div className="w-[1px] h-6 bg-gradient-to-b from-cyan-400 to-transparent" />
           </div>
         </div>
       </div>
+
+      {/* RENDERIZADO DEL MODAL DE FEEDBACK OCULTO */}
+      {showFeedback && (
+        <FeedbackModal 
+          onClose={() => setShowFeedback(false)} 
+          username={username || 'PILOTO_ANONIMO'} 
+        />
+      )}
     </div>
   );
 }
