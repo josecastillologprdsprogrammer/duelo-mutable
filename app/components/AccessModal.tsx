@@ -218,7 +218,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-black/40 border border-cyan-900/60 p-3.5 text-sm text-cyan-400 focus:outline-none focus:border-cyan-400 transition-all uppercase placeholder:text-zinc-900 shadow-inner"
+                className="w-full bg-black/40 border border-cyan-900/60 p-3.5 text-sm text-cyan-400 focus:outline-none focus:border-cyan-400 transition-all uppercase placeholder:text-zinc-500 shadow-inner"
                 placeholder="ESCRIBE TU ALIAS..."
                 maxLength={12}
               />
@@ -230,7 +230,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
                 type="text"
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value)}
-                className="w-full bg-black/40 border border-cyan-900/40 p-3.5 text-sm text-zinc-300 focus:outline-none focus:border-cyan-400/50 transition-all uppercase placeholder:text-zinc-900 shadow-inner"
+                className="w-full bg-black/40 border border-cyan-900/40 p-3.5 text-sm text-cyan-400 focus:outline-none focus:border-cyan-400/50 transition-all uppercase placeholder:text-zinc-500 shadow-inner"
                 placeholder="CÓDIGO PARA UNIRSE..."
                 maxLength={6}
               />
