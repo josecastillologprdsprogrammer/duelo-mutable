@@ -256,16 +256,16 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
           </form>
 
           {/* Decoración Inferior + Botón de Reporte */}
-          <div className="mt-8 flex flex-col items-center gap-2 opacity-70">
+          <div className="mt-8 flex flex-col items-center gap-2">
             <button 
               type="button" 
               onClick={() => setShowFeedback(true)}
-              className="text-[9px] text-zinc-500 hover:text-cyan-400 uppercase tracking-widest border-b border-transparent hover:border-cyan-400 transition-all mb-1"
+              className="text-[10px] font-bold text-cyan-400 hover:text-cyan-200 uppercase tracking-widest border-b border-cyan-900/50 hover:border-cyan-400 transition-all mb-1 drop-shadow-[0_0_5px_rgba(34,211,238,0.4)]"
             >
               [ Reporte de Experiencia ]
             </button>
-            <div className="w-2 h-2 rounded-full border border-cyan-400 shadow-[0_0_10px_#22d3ee]" />
-            <div className="w-[1px] h-6 bg-gradient-to-b from-cyan-400 to-transparent" />
+            <div className="w-2 h-2 rounded-full border border-cyan-400 shadow-[0_0_10px_#22d3ee] opacity-70" />
+            <div className="w-[1px] h-6 bg-gradient-to-b from-cyan-400 to-transparent opacity-70" />
           </div>
         </div>
       </div>
