@@ -211,7 +211,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
 
           <form onSubmit={handleAccess} className="space-y-5">
             <div className="space-y-2">
-              <label className="block text-[10px] text-zinc-600 uppercase tracking-widest ml-1">User_ID</label>
+              <label className="block text-[10px] text-zinc-600 uppercase tracking-widest ml-1">Nombre De Usuario</label>
               <input
                 required
                 autoFocus
@@ -225,7 +225,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-[10px] text-zinc-600 uppercase tracking-widest ml-1">Link_Code (Opcional)</label>
+              <label className="block text-[10px] text-zinc-600 uppercase tracking-widest ml-1">Codigo De la Sala(Opcional)</label>
               <input
                 type="text"
                 value={roomCode}
