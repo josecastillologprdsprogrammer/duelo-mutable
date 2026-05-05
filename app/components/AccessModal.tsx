@@ -129,7 +129,7 @@ export default function AccessModal({ onAccessGranted }: AccessModalProps) {
       
       {/* BACKGROUND LOBBY */}
       <div className="absolute inset-0 z-0">
-        <img src="/bg.png" className="w-full h-full object-cover opacity-70" alt="Lobby Matrix" />
+        <img src="/bg_lobby.png" className="w-full h-full object-cover opacity-70" alt="Lobby Matrix" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/80" />
       </div>
 
